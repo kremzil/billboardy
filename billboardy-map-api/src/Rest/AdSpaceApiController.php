@@ -1,0 +1,204 @@
+<?php
+
+declare(strict_types=1);
+
+namespace Billboardy\MapApi\Rest;
+
+use Billboardy\MapApi\Admin\SettingsPage;
+use Billboardy\MapApi\Service\AdSpaceService;
+
+final class AdSpaceApiController
+{
+    private const NAMESPACE = 'billboardy/v1';
+
+    private AdSpaceService $service;
+
+    public function __construct(AdSpaceService $service)
+    {
+        $this->service = $service;
+    }
+
+    public function registerRoutes(): void
+    {
+        register_rest_route(self::NAMESPACE, '/ad-spaces', [
+            'methods' => \WP_REST_Server::READABLE,
+            'callback' => [$this, 'adSpaces'],
+            'permission_callback' => '__return_true',
+            'args' => $this->collectionArgs(),
+        ]);
+
+        register_rest_route(self::NAMESPACE, '/map-points', [
+            'methods' => \WP_REST_Server::READABLE,
+            'callback' => [$this, 'mapPoints'],
+            'permission_callback' => '__return_true',
+            'args' => $this->filterArgs(),
+        ]);
+
+        register_rest_route(self::NAMESPACE, '/ad-spaces/(?P<id>[a-zA-Z0-9_\\-]+)', [
+            'methods' => \WP_REST_Server::READABLE,
+            'callback' => [$this, 'adSpace'],
+            'permission_callback' => '__return_true',
+            'args' => [
+                'id' => [
+                    'type' => 'string',
+                    'required' => true,
+                    'sanitize_callback' => 'sanitize_text_field',
+                ],
+            ],
+        ]);
+
+        register_rest_route(self::NAMESPACE, '/filters', [
+            'methods' => \WP_REST_Server::READABLE,
+            'callback' => [$this, 'filters'],
+            'permission_callback' => '__return_true',
+        ]);
+    }
+
+    public function adSpaces(\WP_REST_Request $request): \WP_REST_Response
+    {
+        $payload = $this->service->adSpaces($this->requestParams($request));
+
+        return $this->response($payload);
+    }
+
+    public function mapPoints(\WP_REST_Request $request): \WP_REST_Response
+    {
+        return $this->response([
+            'data' => $this->service->mapPoints($this->requestParams($request)),
+        ]);
+    }
+
+    public function adSpace(\WP_REST_Request $request)
+    {
+        $adSpace = $this->service->adSpace((string) $request->get_param('id'));
+
+        if ($adSpace === null) {
+            return new \WP_Error(
+                'billboardy_ad_space_not_found',
+                __('Advertising space was not found.', 'billboardy-map-api'),
+                ['status' => 404]
+            );
+        }
+
+        return $this->response([
+            'data' => $adSpace,
+        ]);
+    }
+
+    public function filters(): \WP_REST_Response
+    {
+        return $this->response([
+            'data' => $this->service->filters(),
+        ]);
+    }
+
+    private function response(array $payload): \WP_REST_Response
+    {
+        $response = new \WP_REST_Response($payload);
+        $origin = $this->allowedOrigin();
+
+        if ($origin !== '') {
+            $response->header('Access-Control-Allow-Origin', $origin);
+            $response->header('Vary', 'Origin');
+        }
+
+        return $response;
+    }
+
+    private function allowedOrigin(): string
+    {
+        $requestOrigin = isset($_SERVER['HTTP_ORIGIN']) ? esc_url_raw((string) $_SERVER['HTTP_ORIGIN']) : '';
+
+        if ($requestOrigin === '') {
+            return '';
+        }
+
+        $origins = array_filter(array_map('trim', explode("\n", (string) SettingsPage::get()['allowed_frontend_origins'])));
+
+        return in_array($requestOrigin, $origins, true) ? $requestOrigin : '';
+    }
+
+    /**
+     * @return array<string, array<string, mixed>>
+     */
+    private function collectionArgs(): array
+    {
+        return array_merge($this->filterArgs(), [
+            'page' => [
+                'type' => 'integer',
+                'default' => 1,
+                'minimum' => 1,
+                'sanitize_callback' => 'absint',
+            ],
+            'per_page' => [
+                'type' => 'integer',
+                'default' => 100,
+                'minimum' => 1,
+                'maximum' => 200,
+                'sanitize_callback' => 'absint',
+            ],
+        ]);
+    }
+
+    /**
+     * @return array<string, array<string, mixed>>
+     */
+    private function filterArgs(): array
+    {
+        return [
+            'media_type' => [
+                'type' => 'string',
+                'default' => '',
+                'sanitize_callback' => 'sanitize_text_field',
+            ],
+            'city' => [
+                'type' => 'string',
+                'default' => '',
+                'sanitize_callback' => 'sanitize_text_field',
+            ],
+            'search' => [
+                'type' => 'string',
+                'default' => '',
+                'sanitize_callback' => 'sanitize_text_field',
+            ],
+            'north' => [
+                'type' => 'number',
+                'required' => false,
+                'sanitize_callback' => 'floatval',
+            ],
+            'south' => [
+                'type' => 'number',
+                'required' => false,
+                'sanitize_callback' => 'floatval',
+            ],
+            'east' => [
+                'type' => 'number',
+                'required' => false,
+                'sanitize_callback' => 'floatval',
+            ],
+            'west' => [
+                'type' => 'number',
+                'required' => false,
+                'sanitize_callback' => 'floatval',
+            ],
+        ];
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function requestParams(\WP_REST_Request $request): array
+    {
+        return [
+            'page' => (int) $request->get_param('page'),
+            'per_page' => (int) $request->get_param('per_page'),
+            'media_type' => (string) $request->get_param('media_type'),
+            'city' => (string) $request->get_param('city'),
+            'search' => (string) $request->get_param('search'),
+            'north' => $request->get_param('north'),
+            'south' => $request->get_param('south'),
+            'east' => $request->get_param('east'),
+            'west' => $request->get_param('west'),
+        ];
+    }
+}
