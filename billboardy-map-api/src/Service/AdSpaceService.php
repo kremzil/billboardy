@@ -38,6 +38,29 @@ final class AdSpaceService
             return $cached;
         }
 
+        if (method_exists($this->repository, 'pagedQuery')) {
+            $query = $this->repository->pagedQuery($params, $page, $perPage);
+
+            if (is_array($query)) {
+                $items = is_array($query['items'] ?? null) ? array_values($query['items']) : [];
+                $total = max(0, (int) ($query['total'] ?? 0));
+
+                $result = [
+                    'data' => $items,
+                    'pagination' => [
+                        'page' => $page,
+                        'perPage' => $perPage,
+                        'total' => $total,
+                        'totalPages' => (int) ceil($total / $perPage),
+                    ],
+                ];
+
+                set_transient($cacheKey, $result, $this->ttl());
+
+                return $result;
+            }
+        }
+
         $items = $this->filteredAdSpaces($params);
         $total = count($items);
         $offset = ($page - 1) * $perPage;
@@ -73,17 +96,11 @@ final class AdSpaceService
         }
 
         $zoom = (int) $params['zoom'];
-        $points = [];
+        $points = array_map(static function (array $point): array {
+            $point['type'] = 'point';
 
-        foreach ($this->mapPointAdSpaces($params) as $adSpace) {
-            $point = $this->mapper->mapPoint($adSpace);
-
-            if ($point !== null) {
-                $point['type'] = 'point';
-                $points[] = $point;
-            }
-        }
-
+            return $point;
+        }, $this->mapPointItems($params));
         $points = $this->dedupeMapPoints($points);
         $search = trim((string) ($params['search'] ?? ''));
         $tooManyRawPoints = count($points) > self::MAX_RAW_MAP_POINTS;
@@ -93,7 +110,6 @@ final class AdSpaceService
         $result = [
             'mode' => $mode,
             'items' => $items,
-            'data' => $items,
             'meta' => [
                 'total' => count($points),
                 'returned' => count($items),
@@ -146,6 +162,16 @@ final class AdSpaceService
 
         if (is_array($cached)) {
             return $cached;
+        }
+
+        if (method_exists($this->repository, 'filterOptions')) {
+            $options = $this->repository->filterOptions();
+
+            if (is_array($options)) {
+                set_transient($cacheKey, $options, $this->ttl());
+
+                return $options;
+            }
         }
 
         $mediaTypes = [];
@@ -229,19 +255,45 @@ final class AdSpaceService
      * @param array<string, mixed> $params
      * @return array<int, array<string, mixed>>
      */
-    private function mapPointAdSpaces(array $params): array
+    private function mapPointItems(array $params): array
     {
+        if (method_exists($this->repository, 'mapPointQuery')) {
+            $points = $this->repository->mapPointQuery($params);
+
+            if (is_array($points)) {
+                return $points;
+            }
+        }
+
         if (method_exists($this->repository, 'mapQuery')) {
             $sources = $this->repository->mapQuery($params);
 
             if (is_array($sources)) {
-                return array_map(function (array $source): array {
-                    return $this->mapper->map($source);
-                }, $sources);
+                $points = [];
+
+                foreach ($sources as $source) {
+                    $point = $this->mapper->mapPoint($this->mapper->map($source));
+
+                    if ($point !== null) {
+                        $points[] = $point;
+                    }
+                }
+
+                return $points;
             }
         }
 
-        return $this->filteredAdSpaces($params);
+        $points = [];
+
+        foreach ($this->filteredAdSpaces($params) as $adSpace) {
+            $point = $this->mapper->mapPoint($adSpace);
+
+            if ($point !== null) {
+                $points[] = $point;
+            }
+        }
+
+        return $points;
     }
 
     /**

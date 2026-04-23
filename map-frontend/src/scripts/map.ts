@@ -69,7 +69,6 @@ type MapItem = MapPoint | MapCluster;
 type MapPayload = {
   mode: 'points' | 'clusters' | 'mixed';
   items?: MapItem[];
-  data?: MapItem[];
   meta?: {
     total?: number;
     returned?: number;
@@ -186,6 +185,7 @@ const state: {
   cardClusters: Map<string, MapCluster>;
   points: MapPoint[];
   items: MapItem[];
+  mapRequestController: AbortController | null;
   requestSeq: number;
 } = {
   map: null,
@@ -200,6 +200,7 @@ const state: {
   cardClusters: new Map(),
   points: [],
   items: [],
+  mapRequestController: null,
   requestSeq: 0,
 };
 
@@ -435,6 +436,9 @@ async function refreshPoints(
 ): Promise<void> {
   const requestId = ++state.requestSeq;
   const status = mustGet<HTMLElement>('.bb-map-status', container);
+  state.mapRequestController?.abort();
+  const controller = new AbortController();
+  state.mapRequestController = controller;
   setStatus(status, strings.loading, 'loading');
 
   const params = new URLSearchParams();
@@ -467,13 +471,29 @@ async function refreshPoints(
   params.set('zoom', String(Math.round(state.map?.getZoom() ?? config.defaultZoom)));
 
   const url = `${config.apiBase}/map-points${params.size > 0 ? `?${params.toString()}` : ''}`;
-  const payload = await fetchCachedMapPayload(url);
+  let payload: MapPayload;
 
-  if (requestId !== state.requestSeq) {
+  try {
+    payload = await fetchCachedMapPayload(url, controller.signal);
+  } catch (error) {
+    if (isAbortError(error) || controller.signal.aborted || requestId !== state.requestSeq) {
+      return;
+    }
+
+    console.error('Unable to load map points.', error);
+    setStatus(status, strings.error, 'error');
+    return;
+  } finally {
+    if (state.mapRequestController === controller) {
+      state.mapRequestController = null;
+    }
+  }
+
+  if (controller.signal.aborted || requestId !== state.requestSeq) {
     return;
   }
 
-  state.items = payload.items ?? payload.data ?? [];
+  state.items = payload.items ?? [];
   state.points = state.items.filter(isMapPoint);
   renderMarkers(container, state.items, options.fitToResults);
   renderResultCards(container, state.items, payload.meta);
@@ -489,14 +509,14 @@ async function refreshPoints(
   setStatus(status, `${strings.count}: ${total}. ${returned} ${modeLabel}`, 'ready');
 }
 
-async function fetchCachedMapPayload(url: string): Promise<MapPayload> {
+async function fetchCachedMapPayload(url: string, signal?: AbortSignal): Promise<MapPayload> {
   const cached = mapPayloadCache.get(url);
 
   if (cached) {
     return cached;
   }
 
-  const payload = await fetchJson<MapPayload>(url);
+  const payload = await fetchJson<MapPayload>(url, { signal });
   mapPayloadCache.set(url, payload);
 
   if (mapPayloadCache.size > maxMapPayloadCacheEntries) {
@@ -1134,11 +1154,12 @@ function markerColor(mediaType: string): string {
   return colors[mediaType] ?? colors.unknown;
 }
 
-async function fetchJson<T>(url: string): Promise<T> {
+async function fetchJson<T>(url: string, options: { signal?: AbortSignal } = {}): Promise<T> {
   const response = await fetch(url, {
     headers: {
       Accept: 'application/json',
     },
+    signal: options.signal,
   });
 
   if (!response.ok) {
@@ -1227,6 +1248,10 @@ function mustGet<T extends Element>(selector: string, scope: ParentNode = docume
   }
 
   return node;
+}
+
+function isAbortError(error: unknown): boolean {
+  return error instanceof DOMException && error.name === 'AbortError';
 }
 
 function escapeHtml(value: string): string {
