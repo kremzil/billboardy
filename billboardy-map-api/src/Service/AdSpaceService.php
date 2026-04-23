@@ -562,7 +562,23 @@ final class AdSpaceService
             return 0.1;
         }
 
-        return 0.05;
+        if ($zoom === 11) {
+            return 0.05;
+        }
+
+        if ($zoom === 12) {
+            return 0.03;
+        }
+
+        if ($zoom === 13) {
+            return 0.02;
+        }
+
+        if ($zoom === 14) {
+            return 0.01;
+        }
+
+        return 0.005;
     }
 
     /**

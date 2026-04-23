@@ -941,18 +941,41 @@ function focusCluster(cluster: MapCluster): void {
     return;
   }
 
+  const map = state.map;
+  const currentZoom = Math.round(map.getZoom() ?? config.defaultZoom);
+  const targetZoom = clusterDrillZoom(cluster, currentZoom);
   const bounds = new google.maps.LatLngBounds(
     { lat: cluster.bounds.south, lng: cluster.bounds.west },
     { lat: cluster.bounds.north, lng: cluster.bounds.east },
   );
 
   if (cluster.bounds.north === cluster.bounds.south && cluster.bounds.east === cluster.bounds.west) {
-    state.map.panTo({ lat: cluster.latitude, lng: cluster.longitude });
-    state.map.setZoom(Math.min((state.map.getZoom() ?? config.defaultZoom) + 2, 15));
+    map.panTo({ lat: cluster.latitude, lng: cluster.longitude });
+    map.setZoom(targetZoom);
     return;
   }
 
-  state.map.fitBounds(bounds, 80);
+  google.maps.event.addListenerOnce(map, 'idle', () => {
+    if (!state.map) {
+      return;
+    }
+
+    const nextZoom = Math.round(state.map.getZoom() ?? currentZoom);
+
+    if (nextZoom < targetZoom) {
+      state.map.setCenter({ lat: cluster.latitude, lng: cluster.longitude });
+      state.map.setZoom(targetZoom);
+    }
+  });
+
+  map.fitBounds(bounds, 80);
+}
+
+function clusterDrillZoom(cluster: MapCluster, currentZoom: number): number {
+  const minimumZoom = cluster.count > 800 ? 13 : 12;
+  const stepZoom = currentZoom + (cluster.count > 400 ? 4 : cluster.count > 100 ? 3 : 2);
+
+  return Math.min(17, Math.max(minimumZoom, stepZoom));
 }
 
 async function openPoint(point: MapPoint, marker: BillboardyMarker, forceSingle = false): Promise<void> {
