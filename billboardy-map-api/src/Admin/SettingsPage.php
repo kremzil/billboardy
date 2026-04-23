@@ -80,6 +80,23 @@ final class SettingsPage
         <div class="wrap">
             <h1><?php echo esc_html__('Billboardy Map API', 'billboardy-map-api'); ?></h1>
             <p><?php echo esc_html__('Backend REST API for the standalone Astro map frontend.', 'billboardy-map-api'); ?></p>
+            <?php if (isset($_GET['billboardy_cache_cleared'])) : ?>
+                <div class="notice notice-success is-dismissible">
+                    <p><?php echo esc_html__('Map API cache was cleared.', 'billboardy-map-api'); ?></p>
+                </div>
+            <?php endif; ?>
+            <?php if (isset($_GET['billboardy_cache_warmed'])) : ?>
+                <div class="notice notice-success is-dismissible">
+                    <p>
+                        <?php
+                        printf(
+                            esc_html__('Map API cache was warmed for %d common views.', 'billboardy-map-api'),
+                            absint($_GET['billboardy_cache_warmed'])
+                        );
+                        ?>
+                    </p>
+                </div>
+            <?php endif; ?>
             <form method="post" action="options.php">
                 <?php settings_fields('billboardy_map_api'); ?>
                 <table class="form-table" role="presentation">
@@ -130,6 +147,20 @@ final class SettingsPage
                     </tr>
                 </table>
                 <?php submit_button(); ?>
+            </form>
+            <hr />
+            <h2><?php echo esc_html__('Cache', 'billboardy-map-api'); ?></h2>
+            <p><?php echo esc_html__('Clear cached map API responses after imports or data cleanup.', 'billboardy-map-api'); ?></p>
+            <form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>">
+                <input type="hidden" name="action" value="billboardy_map_clear_cache" />
+                <?php wp_nonce_field('billboardy_map_clear_cache'); ?>
+                <?php submit_button(__('Clear map cache', 'billboardy-map-api'), 'secondary'); ?>
+            </form>
+            <p><?php echo esc_html__('Warm common Slovakia map views so the first visitor does not pay the full query cost.', 'billboardy-map-api'); ?></p>
+            <form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>">
+                <input type="hidden" name="action" value="billboardy_map_warm_cache" />
+                <?php wp_nonce_field('billboardy_map_warm_cache'); ?>
+                <?php submit_button(__('Warm map cache', 'billboardy-map-api'), 'secondary'); ?>
             </form>
         </div>
         <?php

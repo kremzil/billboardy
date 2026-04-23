@@ -20,6 +20,10 @@ final class AdSpaceMapper
      */
     public function map(array $source): array
     {
+        if (!empty($source['ad_space_model'])) {
+            return $this->normalizeAdSpaceModel($source);
+        }
+
         $sourceId = (int) ($source['source_id'] ?? 0);
         $rawName = (string) ($source['name'] ?? '');
         $code = $this->extractCode((string) ($source['sku'] ?? ''), $rawName);
@@ -67,6 +71,54 @@ final class AdSpaceMapper
             'rawMediaType' => $rawMediaType,
             'isFeatured' => (bool) ($source['featured'] ?? false),
             'updatedAt' => $source['updated_at'] ?? null,
+        ];
+    }
+
+    /**
+     * @param array<string, mixed> $source
+     * @return array<string, mixed>
+     */
+    private function normalizeAdSpaceModel(array $source): array
+    {
+        $placeholderImageUrl = (string) SettingsPage::get()['placeholder_image_url'];
+        $imageUrl = (string) ($source['imageUrl'] ?? '');
+
+        if ($imageUrl === '') {
+            $imageUrl = $placeholderImageUrl;
+        }
+
+        $mediaType = (string) ($source['mediaType'] ?? 'unknown');
+
+        return [
+            'id' => (string) ($source['id'] ?? ''),
+            'sourceId' => (int) ($source['sourceId'] ?? 0),
+            'code' => (string) ($source['code'] ?? ''),
+            'title' => (string) ($source['title'] ?? ''),
+            'mediaType' => $mediaType,
+            'mediaTypeLabel' => (string) ($source['mediaTypeLabel'] ?? (self::MEDIA_TYPES[$mediaType] ?? 'Neznáme')),
+            'locationLabel' => (string) ($source['locationLabel'] ?? ''),
+            'city' => (string) ($source['city'] ?? ''),
+            'addressText' => (string) ($source['addressText'] ?? ''),
+            'latitude' => is_float($source['latitude'] ?? null) ? $source['latitude'] : (($source['latitude'] ?? null) === null ? null : (float) $source['latitude']),
+            'longitude' => is_float($source['longitude'] ?? null) ? $source['longitude'] : (($source['longitude'] ?? null) === null ? null : (float) $source['longitude']),
+            'sizeLabel' => (string) ($source['sizeLabel'] ?? ''),
+            'widthCm' => ($source['widthCm'] ?? null) === null ? null : (int) $source['widthCm'],
+            'heightCm' => ($source['heightCm'] ?? null) === null ? null : (int) $source['heightCm'],
+            'descriptionHtml' => $this->sanitizeDescription((string) ($source['descriptionHtml'] ?? '')),
+            'imageUrl' => $imageUrl,
+            'status' => (string) ($source['status'] ?? 'active'),
+            'visibility' => (string) ($source['visibility'] ?? 'visible'),
+            'mapPinType' => (string) ($source['mapPinType'] ?? $mediaType),
+            'detailUrl' => $source['detailUrl'] ?? null,
+            'source' => (string) ($source['source'] ?? 'database'),
+            'excerpt' => (string) ($source['excerpt'] ?? ''),
+            'gallery' => array_values((array) ($source['gallery'] ?? [])),
+            'seoText' => $source['seoText'] ?? null,
+            'rawGps' => (string) ($source['rawGps'] ?? ''),
+            'rawSize' => (string) ($source['rawSize'] ?? ''),
+            'rawMediaType' => (string) ($source['rawMediaType'] ?? ''),
+            'isFeatured' => (bool) ($source['isFeatured'] ?? false),
+            'updatedAt' => $source['updatedAt'] ?? null,
         ];
     }
 
@@ -138,7 +190,7 @@ final class AdSpaceMapper
             return 'bigboard';
         }
 
-        if (strpos($value, 'citylight') !== false || strpos($value, 'city light') !== false) {
+        if (strpos($value, 'citylight') !== false || strpos($value, 'city light') !== false || preg_match('/\bcl[a-z0-9_+-]*\b/', $value)) {
             return 'citylight';
         }
 
@@ -270,4 +322,3 @@ final class AdSpaceMapper
         return function_exists('mb_convert_case') ? mb_convert_case($lower, MB_CASE_TITLE, 'UTF-8') : ucwords($lower);
     }
 }
-

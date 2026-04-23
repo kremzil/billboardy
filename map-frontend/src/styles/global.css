@@ -278,6 +278,50 @@
     border-left-color: var(--color-bb-red);
   }
 
+  .bb-map-marker {
+    display: inline-grid;
+    place-items: center;
+    width: 18px;
+    height: 18px;
+    border: 2px solid #ffffff;
+    border-radius: 999px;
+    background: var(--bb-marker-color, var(--color-bb-green));
+    box-shadow: 0 4px 14px rgba(21, 23, 25, 0.28);
+  }
+
+  .bb-map-marker-count {
+    width: 34px;
+    height: 34px;
+    color: #ffffff;
+    font-size: 12px;
+    font-weight: 850;
+    line-height: 1;
+    outline: 4px solid color-mix(in srgb, var(--bb-marker-color, var(--color-bb-green)) 18%, transparent);
+  }
+
+  .bb-map-marker[data-marker-kind="client-cluster"],
+  .bb-map-marker[data-marker-kind="server-cluster"] {
+    width: 38px;
+    height: 38px;
+    border-width: 3px;
+  }
+
+  .bb-map-marker[data-media-type="citylight"] {
+    --bb-marker-color: #d03f2f;
+  }
+
+  .bb-map-marker[data-media-type="bigboard"] {
+    --bb-marker-color: #2563eb;
+  }
+
+  .bb-map-marker[data-media-type="mixed"] {
+    --bb-marker-color: #3f3f46;
+  }
+
+  .bb-map-marker[data-media-type="unknown"] {
+    --bb-marker-color: #71717a;
+  }
+
   .gm-style .bb-map-popup {
     width: 320px;
     max-width: 100%;
@@ -338,6 +382,71 @@
 
   .bb-map-popup-description p {
     margin: 0 0 8px;
+  }
+
+  .bb-map-popup-location,
+  .bb-map-popup-more {
+    margin: 0 0 10px;
+    color: var(--color-bb-muted);
+    line-height: 1.4;
+  }
+
+  .bb-map-popup-card-grid {
+    display: grid;
+    gap: 8px;
+    max-height: 220px;
+    overflow: auto;
+    margin-top: 10px;
+  }
+
+  .bb-map-popup-mini-card {
+    display: grid;
+    grid-template-columns: 72px minmax(0, 1fr);
+    gap: 10px;
+    border: 1px solid var(--color-bb-line);
+    border-radius: 8px;
+    background: #ffffff;
+    color: var(--color-bb-ink);
+    padding: 8px;
+    text-decoration: none;
+  }
+
+  .bb-map-popup-mini-card img {
+    width: 72px;
+    aspect-ratio: 1 / 1;
+    object-fit: cover;
+    border-radius: 8px;
+    background: var(--color-bb-surface);
+  }
+
+  .bb-map-popup-mini-card div {
+    display: grid;
+    gap: 3px;
+    min-width: 0;
+  }
+
+  .bb-map-popup-mini-card strong {
+    font-weight: 850;
+  }
+
+  .bb-map-popup-mini-card span,
+  .bb-map-popup-mini-card small,
+  .bb-map-popup-mini-card em {
+    color: var(--color-bb-muted);
+    font-size: 12px;
+    line-height: 1.25;
+  }
+
+  .bb-map-popup-mini-card em {
+    justify-self: start;
+    margin-top: 4px;
+    border-radius: 8px;
+    background: var(--color-bb-green);
+    color: #ffffff;
+    padding: 7px 10px;
+    font-size: 12px;
+    font-weight: 850;
+    font-style: normal;
   }
 
   .bb-map-popup-cta {

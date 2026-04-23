@@ -63,9 +63,7 @@ final class AdSpaceApiController
 
     public function mapPoints(\WP_REST_Request $request): \WP_REST_Response
     {
-        return $this->response([
-            'data' => $this->service->mapPoints($this->requestParams($request)),
-        ]);
+        return $this->response($this->service->mapPoints($this->requestParams($request)));
     }
 
     public function adSpace(\WP_REST_Request $request)
@@ -164,24 +162,41 @@ final class AdSpaceApiController
             'north' => [
                 'type' => 'number',
                 'required' => false,
-                'sanitize_callback' => 'floatval',
+                'sanitize_callback' => [$this, 'sanitizeFloat'],
             ],
             'south' => [
                 'type' => 'number',
                 'required' => false,
-                'sanitize_callback' => 'floatval',
+                'sanitize_callback' => [$this, 'sanitizeFloat'],
             ],
             'east' => [
                 'type' => 'number',
                 'required' => false,
-                'sanitize_callback' => 'floatval',
+                'sanitize_callback' => [$this, 'sanitizeFloat'],
             ],
             'west' => [
                 'type' => 'number',
                 'required' => false,
-                'sanitize_callback' => 'floatval',
+                'sanitize_callback' => [$this, 'sanitizeFloat'],
+            ],
+            'zoom' => [
+                'type' => 'integer',
+                'default' => 12,
+                'minimum' => 1,
+                'maximum' => 21,
+                'sanitize_callback' => 'absint',
             ],
         ];
+    }
+
+    /**
+     * WordPress passes value, request and param name to sanitize callbacks.
+     *
+     * @param mixed $value
+     */
+    public function sanitizeFloat($value): float
+    {
+        return (float) $value;
     }
 
     /**
@@ -199,6 +214,7 @@ final class AdSpaceApiController
             'south' => $request->get_param('south'),
             'east' => $request->get_param('east'),
             'west' => $request->get_param('west'),
+            'zoom' => (int) $request->get_param('zoom'),
         ];
     }
 }

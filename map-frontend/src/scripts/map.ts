@@ -1,9 +1,10 @@
-import { MarkerClusterer } from '@googlemaps/markerclusterer';
+import { MarkerClusterer, type Marker as ClusterMarker, type Renderer } from '@googlemaps/markerclusterer';
 
 declare global {
   interface Window {
     google: typeof google;
     BILLBOARDY_MAP_CONFIG?: Partial<MapConfig>;
+    __billboardyGoogleMapsReady?: () => void;
   }
 }
 
@@ -12,7 +13,9 @@ type MapConfig = {
   googleMapsApiKey: string;
   contactUrl: string;
   placeholderImageUrl: string;
+  googleMapsMapId: string;
   defaultCenter: google.maps.LatLngLiteral;
+  defaultZoom: number;
 };
 
 type ApiCollection<T> = {
@@ -30,6 +33,7 @@ type FiltersPayload = {
 };
 
 type MapPoint = {
+  type?: 'point';
   id: string;
   code: string;
   title: string;
@@ -39,6 +43,38 @@ type MapPoint = {
   imageUrl: string;
   locationLabel: string;
   sizeLabel: string;
+};
+
+type MapBoundsPayload = {
+  north: number;
+  south: number;
+  east: number;
+  west: number;
+};
+
+type MapCluster = {
+  type: 'cluster';
+  id: string;
+  title: string;
+  mediaType: string;
+  latitude: number;
+  longitude: number;
+  count: number;
+  locationLabel: string;
+  bounds: MapBoundsPayload;
+};
+
+type MapItem = MapPoint | MapCluster;
+
+type MapPayload = {
+  mode: 'points' | 'clusters' | 'mixed';
+  items?: MapItem[];
+  data?: MapItem[];
+  meta?: {
+    total?: number;
+    returned?: number;
+    zoom?: number;
+  };
 };
 
 type AdSpace = MapPoint & {
@@ -53,6 +89,20 @@ type AdSpace = MapPoint & {
   visibility: string;
   detailUrl: string | null;
   excerpt: string;
+};
+
+type CoordinateMarkerGroup = {
+  id: string;
+  point: MapPoint;
+  points: MapPoint[];
+};
+
+type BillboardyMarker = google.maps.marker.AdvancedMarkerElement & {
+  __billboardyMediaType?: string;
+};
+
+type BillboardyClusterMarker = ClusterMarker & {
+  __billboardyMediaType?: string;
 };
 
 const strings = {
@@ -75,6 +125,8 @@ const strings = {
   zoomGroup: 'Priblížiť oblasť',
   showOnMap: 'Zobraziť na mape',
   spaces: 'plôch',
+  areas: 'oblastí',
+  sameLocation: 'Plochy na rovnakej lokalite',
   code: 'Kód',
   type: 'Typ',
   location: 'Lokalita',
@@ -87,7 +139,9 @@ const defaultConfig: MapConfig = {
   googleMapsApiKey: import.meta.env.PUBLIC_GOOGLE_MAPS_API_KEY ?? '',
   contactUrl: import.meta.env.PUBLIC_CONTACT_URL ?? '/kontaktujte-nas/',
   placeholderImageUrl: import.meta.env.PUBLIC_PLACEHOLDER_IMAGE_URL ?? '',
-  defaultCenter: { lat: 48.1486, lng: 17.1077 },
+  googleMapsMapId: import.meta.env.PUBLIC_GOOGLE_MAPS_MAP_ID ?? 'DEMO_MAP_ID',
+  defaultCenter: { lat: 48.669, lng: 19.699 },
+  defaultZoom: Number(import.meta.env.PUBLIC_GOOGLE_MAPS_DEFAULT_ZOOM ?? 7),
 };
 
 const config: MapConfig = {
@@ -99,27 +153,38 @@ const config: MapConfig = {
   },
 };
 
+const mapPayloadCache = new Map<string, MapPayload>();
+const maxMapPayloadCacheEntries = 40;
+
 const state: {
   map: google.maps.Map | null;
   clusterer: MarkerClusterer | null;
-  markers: google.maps.Marker[];
-  markerById: Map<string, google.maps.Marker>;
+  markers: BillboardyMarker[];
+  markerById: Map<string, BillboardyMarker>;
+  markerGroupById: Map<string, CoordinateMarkerGroup>;
   infoWindow: google.maps.InfoWindow | null;
   detailsCache: Map<string, AdSpace>;
   cardGroups: Map<string, MapPoint[]>;
+  cardClusters: Map<string, MapCluster>;
   points: MapPoint[];
+  items: MapItem[];
   requestSeq: number;
 } = {
   map: null,
   clusterer: null,
   markers: [],
   markerById: new Map(),
+  markerGroupById: new Map(),
   infoWindow: null,
   detailsCache: new Map(),
   cardGroups: new Map(),
+  cardClusters: new Map(),
   points: [],
+  items: [],
   requestSeq: 0,
 };
+
+let googleMapsPromise: Promise<void> | null = null;
 
 const root = document.querySelector<HTMLElement>('#billboardy-map-app');
 
@@ -144,26 +209,20 @@ async function boot(container: HTMLElement): Promise<void> {
 
     state.map = new google.maps.Map(mustGet<HTMLElement>('.bb-map-canvas', container), {
       center: config.defaultCenter,
-      zoom: 12,
+      zoom: config.defaultZoom,
+      mapId: config.googleMapsMapId,
       mapTypeControl: false,
       streetViewControl: false,
       fullscreenControl: true,
       clickableIcons: false,
-      styles: [
-        { featureType: 'poi.business', stylers: [{ visibility: 'off' }] },
-        { featureType: 'transit.station', stylers: [{ visibility: 'simplified' }] },
-      ],
     });
     state.infoWindow = new google.maps.InfoWindow({ maxWidth: 360 });
 
-    const [filters] = await Promise.all([
-      fetchJson<ApiCollection<FiltersPayload>>(`${config.apiBase}/filters`),
-      refreshPoints(container, { includeBounds: false, fitToResults: true }),
-    ]);
-
-    populateFilters(container, filters.data);
     bindControls(container);
+    await waitForMapIdle();
+    await refreshPoints(container, { includeBounds: true, fitToResults: false });
     bindMapViewport(container);
+    void hydrateFilters(container);
   } catch (error) {
     console.error(error);
     setStatus(status, strings.error, 'error');
@@ -278,7 +337,7 @@ function bindControls(container: HTMLElement): void {
       if (point && marker && state.map) {
         state.map.panTo({ lat: point.latitude, lng: point.longitude });
         state.map.setZoom(Math.max(state.map.getZoom() ?? 14, 15));
-        void openPoint(point, marker);
+        void openPoint(point, marker, true);
       }
     }
 
@@ -288,6 +347,31 @@ function bindControls(container: HTMLElement): void {
       if (points && state.map) {
         fitToPoints(points, 80);
       }
+    }
+
+    if (action === 'focus-cluster') {
+      const cluster = state.cardClusters.get(id);
+
+      if (cluster) {
+        focusCluster(cluster);
+      }
+    }
+  });
+
+  document.addEventListener('click', (event) => {
+    const target = event.target instanceof Element ? event.target.closest<HTMLElement>('[data-popup-action="open-point"]') : null;
+
+    if (!target) {
+      return;
+    }
+
+    event.preventDefault();
+    const id = target.dataset.pointId ?? '';
+    const point = state.points.find((item) => item.id === id);
+    const marker = state.markerById.get(id);
+
+    if (point && marker) {
+      void openPoint(point, marker, true);
     }
   });
 }
@@ -304,6 +388,25 @@ function bindMapViewport(container: HTMLElement): void {
     viewportTimer = window.setTimeout(() => {
       void refreshPoints(container, { includeBounds: true, fitToResults: false });
     }, 320);
+  });
+}
+
+async function hydrateFilters(container: HTMLElement): Promise<void> {
+  try {
+    const filters = await fetchJson<ApiCollection<FiltersPayload>>(`${config.apiBase}/filters`);
+    populateFilters(container, filters.data);
+  } catch (error) {
+    console.error('Unable to load map filters.', error);
+  }
+}
+
+function waitForMapIdle(): Promise<void> {
+  if (!state.map) {
+    return Promise.resolve();
+  }
+
+  return new Promise((resolve) => {
+    google.maps.event.addListenerOnce(state.map as google.maps.Map, 'idle', () => resolve());
   });
 }
 
@@ -334,73 +437,157 @@ async function refreshPoints(
     const bounds = state.map?.getBounds();
 
     if (bounds) {
-      const northEast = bounds.getNorthEast();
-      const southWest = bounds.getSouthWest();
-      params.set('north', northEast.lat().toString());
-      params.set('east', northEast.lng().toString());
-      params.set('south', southWest.lat().toString());
-      params.set('west', southWest.lng().toString());
+      const paddedBounds = paddedSerializableBounds(bounds, Math.round(state.map?.getZoom() ?? config.defaultZoom));
+      params.set('north', paddedBounds.north.toString());
+      params.set('east', paddedBounds.east.toString());
+      params.set('south', paddedBounds.south.toString());
+      params.set('west', paddedBounds.west.toString());
     }
   }
 
+  params.set('zoom', String(Math.round(state.map?.getZoom() ?? config.defaultZoom)));
+
   const url = `${config.apiBase}/map-points${params.size > 0 ? `?${params.toString()}` : ''}`;
-  const payload = await fetchJson<ApiCollection<MapPoint[]>>(url);
+  const payload = await fetchCachedMapPayload(url);
 
   if (requestId !== state.requestSeq) {
     return;
   }
 
-  state.points = payload.data;
-  renderMarkers(container, state.points, options.fitToResults);
-  renderResultCards(container, state.points);
+  state.items = payload.items ?? payload.data ?? [];
+  state.points = state.items.filter(isMapPoint);
+  renderMarkers(container, state.items, options.fitToResults);
+  renderResultCards(container, state.items, payload.meta);
 
-  if (state.points.length === 0) {
+  if (state.items.length === 0) {
     setStatus(status, strings.empty, 'empty');
     return;
   }
 
-  setStatus(status, `${strings.count}: ${state.points.length}`, 'ready');
+  const total = payload.meta?.total ?? state.points.length;
+  const returned = payload.meta?.returned ?? state.items.length;
+  const modeLabel = payload.mode === 'clusters' ? strings.areas : strings.spaces;
+  setStatus(status, `${strings.count}: ${total}. ${returned} ${modeLabel}`, 'ready');
 }
 
-function renderMarkers(container: HTMLElement, points: MapPoint[], fitToResults: boolean): void {
+async function fetchCachedMapPayload(url: string): Promise<MapPayload> {
+  const cached = mapPayloadCache.get(url);
+
+  if (cached) {
+    return cached;
+  }
+
+  const payload = await fetchJson<MapPayload>(url);
+  mapPayloadCache.set(url, payload);
+
+  if (mapPayloadCache.size > maxMapPayloadCacheEntries) {
+    const oldestKey = mapPayloadCache.keys().next().value;
+
+    if (oldestKey) {
+      mapPayloadCache.delete(oldestKey);
+    }
+  }
+
+  return payload;
+}
+
+function paddedSerializableBounds(bounds: google.maps.LatLngBounds, zoom: number): MapBoundsPayload {
+  const northEast = bounds.getNorthEast();
+  const southWest = bounds.getSouthWest();
+  const paddingRatio = zoom >= 13 ? 0.65 : zoom >= 10 ? 0.45 : 0.25;
+  const precision = zoom >= 13 ? 4 : zoom >= 10 ? 3 : 2;
+  const latPadding = Math.abs(northEast.lat() - southWest.lat()) * paddingRatio;
+  const lngPadding = Math.abs(northEast.lng() - southWest.lng()) * paddingRatio;
+
+  return {
+    north: roundCoordinate(Math.min(85, northEast.lat() + latPadding), precision),
+    east: roundCoordinate(Math.min(180, northEast.lng() + lngPadding), precision),
+    south: roundCoordinate(Math.max(-85, southWest.lat() - latPadding), precision),
+    west: roundCoordinate(Math.max(-180, southWest.lng() - lngPadding), precision),
+  };
+}
+
+function roundCoordinate(value: number, precision: number): number {
+  const factor = 10 ** precision;
+
+  return Math.round(value * factor) / factor;
+}
+
+function renderMarkers(container: HTMLElement, items: MapItem[], fitToResults: boolean): void {
   if (!state.map) {
     return;
   }
 
-  state.clusterer?.clearMarkers();
-  state.markers.forEach((marker) => marker.setMap(null));
-  state.markers = [];
-  state.markerById.clear();
+  mustGet<HTMLElement>('.bb-map-stage', container).classList.add('is-ready');
+  clearRenderedMarkers();
 
   const bounds = new google.maps.LatLngBounds();
 
-  state.markers = points.map((point) => {
-    const marker = new google.maps.Marker({
-      position: { lat: point.latitude, lng: point.longitude },
-      title: point.title,
-      icon: markerIcon(point.mediaType),
+  const markerGroups = groupPointsByCoordinate(items.filter(isMapPoint));
+  const clusters = items.filter(isMapCluster);
+
+  const clusterMarkers = clusters.map((cluster) => {
+    const marker = new google.maps.marker.AdvancedMarkerElement({
+      position: { lat: cluster.latitude, lng: cluster.longitude },
+      title: `${cluster.count} ${strings.spaces}`,
+      content: markerContent(cluster.mediaType, cluster.count, 'server-cluster'),
+      gmpClickable: true,
+    }) as BillboardyMarker;
+    marker.__billboardyMediaType = normalizeMarkerMediaType(cluster.mediaType);
+
+    marker.addEventListener('gmp-click', () => {
+      focusCluster(cluster);
     });
 
-    marker.addListener('click', () => {
-      void openPoint(point, marker);
-    });
-
-    bounds.extend(marker.getPosition() as google.maps.LatLng);
-    state.markerById.set(point.id, marker);
+    bounds.extend({ lat: cluster.latitude, lng: cluster.longitude });
     return marker;
   });
 
-  state.clusterer = new MarkerClusterer({
-    map: state.map,
-    markers: state.markers,
+  const pointMarkers = markerGroups.map((group) => {
+    const marker = new google.maps.marker.AdvancedMarkerElement({
+      position: { lat: group.point.latitude, lng: group.point.longitude },
+      title: group.points.length > 1 ? `${group.points.length} ${strings.spaces} - ${group.point.locationLabel}` : group.point.title,
+      content: markerContent(group.point.mediaType, group.points.length, group.points.length > 1 ? 'same-location' : 'point'),
+      gmpClickable: true,
+    }) as BillboardyMarker;
+    marker.__billboardyMediaType = normalizeMarkerMediaType(group.point.mediaType);
+
+    marker.addEventListener('gmp-click', () => {
+      if (group.points.length > 1) {
+        openCoordinateGroup(group, marker);
+        return;
+      }
+
+      void openPoint(group.point, marker);
+    });
+
+    bounds.extend({ lat: group.point.latitude, lng: group.point.longitude });
+    for (const point of group.points) {
+      state.markerById.set(point.id, marker);
+      state.markerGroupById.set(point.id, group);
+    }
+
+    return marker;
   });
+
+  state.markers = [...clusterMarkers, ...pointMarkers];
+
+  if (clusters.length > 0) {
+    state.markers.forEach((marker) => setMarkerMap(marker, state.map));
+  } else {
+    state.clusterer = new MarkerClusterer({
+      map: state.map,
+      markers: state.markers,
+      renderer: markerClusterRenderer,
+    });
+  }
 
   if (!fitToResults) {
     return;
   }
 
-  if (points.length === 1) {
-    state.map.setCenter({ lat: points[0].latitude, lng: points[0].longitude });
+  if (items.length === 1) {
+    state.map.setCenter({ lat: items[0].latitude, lng: items[0].longitude });
     state.map.setZoom(15);
     return;
   }
@@ -408,20 +595,83 @@ function renderMarkers(container: HTMLElement, points: MapPoint[], fitToResults:
   if (!bounds.isEmpty()) {
     state.map.fitBounds(bounds, 48);
   }
-
-  mustGet<HTMLElement>('.bb-map-stage', container).classList.add('is-ready');
 }
 
-function renderResultCards(container: HTMLElement, points: MapPoint[]): void {
+function clearRenderedMarkers(): void {
+  if (state.clusterer) {
+    state.clusterer.clearMarkers(true);
+    state.clusterer.setMap(null);
+    state.clusterer = null;
+  }
+
+  state.markers.forEach((marker) => setMarkerMap(marker, null));
+  state.markers = [];
+  state.markerById.clear();
+  state.markerGroupById.clear();
+}
+
+function setMarkerMap(marker: BillboardyMarker, map: google.maps.Map | null): void {
+  marker.map = map;
+}
+
+function groupPointsByCoordinate(points: MapPoint[]): CoordinateMarkerGroup[] {
+  const groups = new Map<string, MapPoint[]>();
+
+  for (const point of points) {
+    const key = `${point.latitude.toFixed(6)}:${point.longitude.toFixed(6)}`;
+    const group = groups.get(key) ?? [];
+    group.push(point);
+    groups.set(key, group);
+  }
+
+  return Array.from(groups.entries()).map(([id, group]) => ({
+    id,
+    point: group[0],
+    points: group.sort((a, b) => a.code.localeCompare(b.code, 'sk', { numeric: true })),
+  }));
+}
+
+function isMapCluster(item: MapItem): item is MapCluster {
+  return item.type === 'cluster';
+}
+
+function isMapPoint(item: MapItem): item is MapPoint {
+  return item.type !== 'cluster';
+}
+
+function renderResultCards(container: HTMLElement, items: MapItem[], meta?: MapPayload['meta']): void {
   const head = mustGet<HTMLElement>('.bb-map-results-head p', container);
   const list = mustGet<HTMLElement>('.bb-map-results-list', container);
+  const clusters = items.filter(isMapCluster);
+  const points = items.filter(isMapPoint);
   const cards = buildResultCards(points);
 
   state.cardGroups.clear();
+  state.cardClusters.clear();
 
-  if (points.length === 0) {
+  if (items.length === 0) {
     head.textContent = strings.empty;
     list.innerHTML = '';
+    return;
+  }
+
+  if (clusters.length > 0) {
+    head.textContent = `${meta?.total ?? points.length} ${strings.spaces}. ${clusters.length} ${strings.areas}`;
+    list.innerHTML = clusters.slice(0, 80).map((cluster) => {
+      state.cardClusters.set(cluster.id, cluster);
+
+      return `
+        <article class="bb-map-result-card bb-map-result-group">
+          <div>
+            <strong>${cluster.count} ${strings.spaces}</strong>
+            <span>${escapeHtml(cluster.locationLabel || strings.selection)}</span>
+          </div>
+          <button type="button" data-card-action="focus-cluster" data-card-id="${escapeAttribute(cluster.id)}">
+            ${strings.zoomGroup}
+          </button>
+        </article>
+      `;
+    }).join('');
     return;
   }
 
@@ -525,9 +775,37 @@ function fitToPoints(points: MapPoint[], padding: number): void {
   state.map.fitBounds(bounds, padding);
 }
 
-async function openPoint(point: MapPoint, marker: google.maps.Marker): Promise<void> {
+function focusCluster(cluster: MapCluster): void {
+  if (!state.map) {
+    return;
+  }
+
+  const bounds = new google.maps.LatLngBounds(
+    { lat: cluster.bounds.south, lng: cluster.bounds.west },
+    { lat: cluster.bounds.north, lng: cluster.bounds.east },
+  );
+
+  if (cluster.bounds.north === cluster.bounds.south && cluster.bounds.east === cluster.bounds.west) {
+    state.map.panTo({ lat: cluster.latitude, lng: cluster.longitude });
+    state.map.setZoom(Math.min((state.map.getZoom() ?? config.defaultZoom) + 2, 15));
+    return;
+  }
+
+  state.map.fitBounds(bounds, 80);
+}
+
+async function openPoint(point: MapPoint, marker: BillboardyMarker, forceSingle = false): Promise<void> {
   if (!state.infoWindow || !state.map) {
     return;
+  }
+
+  if (!forceSingle) {
+    const group = state.markerGroupById.get(point.id);
+
+    if (group && group.points.length > 1) {
+      openCoordinateGroup(group, marker);
+      return;
+    }
   }
 
   state.infoWindow.setContent(popupLoading(point));
@@ -540,6 +818,15 @@ async function openPoint(point: MapPoint, marker: google.maps.Marker): Promise<v
     console.error(error);
     state.infoWindow.setContent(`<div class="bb-map-popup"><p>${strings.error}</p></div>`);
   }
+}
+
+function openCoordinateGroup(group: CoordinateMarkerGroup, marker: BillboardyMarker): void {
+  if (!state.infoWindow || !state.map) {
+    return;
+  }
+
+  state.infoWindow.setContent(coordinateGroupPopup(group));
+  state.infoWindow.open({ anchor: marker, map: state.map });
 }
 
 async function getAdSpace(id: string): Promise<AdSpace> {
@@ -587,6 +874,35 @@ function popupContent(adSpace: AdSpace): string {
   `;
 }
 
+function coordinateGroupPopup(group: CoordinateMarkerGroup): string {
+  const visibleItems = group.points.slice(0, 6);
+  const hiddenCount = group.points.length - visibleItems.length;
+
+  return `
+    <article class="bb-map-popup bb-map-popup-group">
+      <div class="bb-map-popup-body">
+        <h2>${strings.sameLocation}</h2>
+        <p class="bb-map-popup-location">${escapeHtml(group.point.locationLabel)}</p>
+        <p><strong>${group.points.length} ${strings.spaces}</strong></p>
+        <div class="bb-map-popup-card-grid">
+          ${visibleItems.map((point) => `
+            <a class="bb-map-popup-mini-card" href="#" data-popup-action="open-point" data-point-id="${escapeAttribute(point.id)}">
+              ${point.imageUrl ? `<img src="${escapeAttribute(point.imageUrl)}" alt="${escapeAttribute(point.title)}" loading="lazy" />` : ''}
+              <div>
+                <strong>${strings.code} ${escapeHtml(point.code)}</strong>
+                <span>${escapeHtml(point.mediaType)}</span>
+                ${point.sizeLabel ? `<small>${escapeHtml(point.sizeLabel)}</small>` : ''}
+                <em>${strings.showOnMap}</em>
+              </div>
+            </a>
+          `).join('')}
+        </div>
+        ${hiddenCount > 0 ? `<p class="bb-map-popup-more">+${hiddenCount}</p>` : ''}
+      </div>
+    </article>
+  `;
+}
+
 function buildContactUrl(code: string): string {
   const url = new URL(config.contactUrl, window.location.href);
   url.searchParams.set('ad_space', code);
@@ -594,17 +910,87 @@ function buildContactUrl(code: string): string {
   return url.toString();
 }
 
-function markerIcon(mediaType: string): google.maps.Symbol {
-  const color = mediaType === 'billboard' ? '#0f8b5f' : '#d03f2f';
+const markerClusterRenderer: Renderer = {
+  render: ({ count, position, markers }) => {
+    const mediaType = dominantMarkerMediaType(markers as BillboardyClusterMarker[]);
+    const marker = new google.maps.marker.AdvancedMarkerElement({
+      position,
+      title: `${count} ${strings.spaces}`,
+      content: markerContent(mediaType, count, 'client-cluster'),
+      gmpClickable: true,
+      zIndex: 1000 + count,
+    }) as BillboardyMarker;
+    marker.__billboardyMediaType = mediaType;
 
-  return {
-    path: google.maps.SymbolPath.CIRCLE,
-    fillColor: color,
-    fillOpacity: 0.95,
-    scale: 7,
-    strokeColor: '#ffffff',
-    strokeWeight: 2,
+    return marker;
+  },
+};
+
+function dominantMarkerMediaType(markers: BillboardyClusterMarker[]): string {
+  const counts = new Map<string, number>();
+
+  for (const marker of markers) {
+    const mediaType = normalizeMarkerMediaType(marker.__billboardyMediaType ?? 'unknown');
+    counts.set(mediaType, (counts.get(mediaType) ?? 0) + 1);
+  }
+
+  const sorted = Array.from(counts.entries()).sort((a, b) => b[1] - a[1]);
+
+  if (sorted.length > 1 && sorted[0][1] !== markers.length) {
+    return 'mixed';
+  }
+
+  return sorted[0]?.[0] ?? 'unknown';
+}
+
+function normalizeMarkerMediaType(mediaType: string): string {
+  const value = mediaType.toLowerCase();
+
+  if (value.startsWith('cl') || value.includes('city')) {
+    return 'citylight';
+  }
+
+  if (value.includes('billboard') || value === 'blb') {
+    return 'billboard';
+  }
+
+  if (value.includes('bigboard')) {
+    return 'bigboard';
+  }
+
+  if (value === 'mixed') {
+    return 'mixed';
+  }
+
+  return 'unknown';
+}
+
+function markerContent(mediaType: string, count = 1, kind: 'point' | 'same-location' | 'server-cluster' | 'client-cluster' = 'point'): HTMLElement {
+  const normalizedMediaType = normalizeMarkerMediaType(mediaType);
+  const color = markerColor(normalizedMediaType);
+  const marker = document.createElement('span');
+  marker.className = count > 1 ? 'bb-map-marker bb-map-marker-count' : 'bb-map-marker';
+  marker.dataset.mediaType = normalizedMediaType;
+  marker.dataset.markerKind = kind;
+  marker.style.setProperty('--bb-marker-color', color);
+
+  if (count > 1) {
+    marker.textContent = String(count);
+  }
+
+  return marker;
+}
+
+function markerColor(mediaType: string): string {
+  const colors: Record<string, string> = {
+    billboard: '#0f8b5f',
+    citylight: '#d03f2f',
+    bigboard: '#2563eb',
+    mixed: '#3f3f46',
+    unknown: '#71717a',
   };
+
+  return colors[mediaType] ?? colors.unknown;
 }
 
 async function fetchJson<T>(url: string): Promise<T> {
@@ -622,15 +1008,49 @@ async function fetchJson<T>(url: string): Promise<T> {
 }
 
 function loadGoogleMaps(apiKey: string): Promise<void> {
-  if (window.google?.maps) {
+  if (isGoogleMapsReady()) {
     return Promise.resolve();
   }
 
-  return new Promise((resolve, reject) => {
+  if (googleMapsPromise) {
+    return googleMapsPromise;
+  }
+
+  googleMapsPromise = new Promise((resolve, reject) => {
     const existing = document.querySelector<HTMLScriptElement>('script[data-billboardy-google-maps]');
 
+    const finish = async () => {
+      try {
+        await window.google.maps.importLibrary('maps');
+        await window.google.maps.importLibrary('marker');
+
+        if (!isGoogleMapsReady()) {
+          throw new Error('Google Maps API loaded without required map libraries.');
+        }
+
+        resolve();
+      } catch (error) {
+        reject(error);
+      }
+    };
+
+    window.__billboardyGoogleMapsReady = () => {
+      void finish();
+    };
+
     if (existing) {
-      existing.addEventListener('load', () => resolve(), { once: true });
+      if (isGoogleMapsReady()) {
+        resolve();
+        return;
+      }
+
+      existing.addEventListener('load', () => {
+        window.setTimeout(() => {
+          if (isGoogleMapsReady()) {
+            resolve();
+          }
+        }, 0);
+      }, { once: true });
       existing.addEventListener('error', () => reject(new Error('Google Maps failed to load.')), { once: true });
       return;
     }
@@ -639,11 +1059,18 @@ function loadGoogleMaps(apiKey: string): Promise<void> {
     script.dataset.billboardyGoogleMaps = 'true';
     script.async = true;
     script.defer = true;
-    script.src = `https://maps.googleapis.com/maps/api/js?key=${encodeURIComponent(apiKey)}&v=weekly`;
-    script.addEventListener('load', () => resolve(), { once: true });
+    script.src = `https://maps.googleapis.com/maps/api/js?key=${encodeURIComponent(apiKey)}&v=weekly&loading=async&callback=__billboardyGoogleMapsReady&libraries=marker`;
     script.addEventListener('error', () => reject(new Error('Google Maps failed to load.')), { once: true });
     document.head.append(script);
   });
+
+  return googleMapsPromise;
+}
+
+function isGoogleMapsReady(): boolean {
+  return typeof window.google?.maps?.Map === 'function'
+    && typeof window.google?.maps?.marker?.AdvancedMarkerElement === 'function'
+    && typeof window.google?.maps?.InfoWindow === 'function';
 }
 
 function setStatus(node: HTMLElement, message: string, mode: 'loading' | 'ready' | 'empty' | 'error'): void {
