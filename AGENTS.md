@@ -1,131 +1,53 @@
 # AGENTS.md
 
-## Project Overview
-
-This workspace contains the interactive advertising-space map module for `billboardy.sk`.
-
-There are two intentionally separated parts:
-
-- `billboardy-map-api/`: WordPress plugin that exposes a clean REST API backed by WooCommerce products.
-- `map-frontend/`: standalone Astro + Tailwind frontend that consumes the WordPress REST API.
-
-Do not merge the Astro app into the WordPress plugin. The target architecture is WordPress as backend and Astro as an independent frontend, with room to later migrate more of the site to Astro.
-
 ## Communication
 
 - Communicate with the project owner in Russian.
-- Keep product UI copy for the map in Slovak.
-- Do not confuse conversation language with interface language: implementation notes and chat can be Russian, but visible frontend strings must remain Slovak.
+- Keep all user-facing interface copy in Slovak unless a task explicitly says otherwise.
+- Do not mix chat language and product language: implementation discussion is in Russian, visible UI text is in Slovak.
 
-## Core Architecture Rules
+## General Coding Rules
 
-- The frontend must never call WooCommerce REST directly as its stable contract.
-- The frontend must never depend on `wp_posts`, `postmeta`, WooCommerce taxonomies, or raw WooCommerce field names.
-- The WordPress plugin owns all WooCommerce reading, normalization, caching, and API response shape.
-- The frontend works only with the clean `AdSpace` API exposed under `/wp-json/billboardy/v1`.
-- Do not use Google My Maps iframe/embed.
-- Use Google Maps JavaScript API for the interactive map.
-- User-facing map UI copy must be Slovak.
+- Prefer small, explicit, reversible changes over broad rewrites.
+- Follow existing project conventions before introducing new abstractions.
+- Keep changes scoped to the part of the codebase required by the task.
+- Use the `docs/` directory as the primary local source of project context when you need to understand the current structure, state, or workflow.
+- Avoid coupling unrelated layers or modules unless the task explicitly requires it.
+- Do not hardcode secrets, tokens, or API keys in source files.
+- Use configuration or environment variables for deployment-specific values.
+- Preserve stable public contracts when changing shared code.
+- Add fallbacks for incomplete or invalid data where reasonable.
+- Do not add speculative features that are not required for the task.
 
-## Backend: `billboardy-map-api`
+## Backend Guidelines
 
-The plugin structure is layered:
+- Keep data access, business rules, and transport concerns separated.
+- Prefer indexed queries and bounded result sets over loading full datasets into memory.
+- Use caching conservatively and make cache invalidation explicit.
+- Keep API responses stable and predictable.
+- Validate and sanitize external input.
+- Fail safely: one bad record should not break the full response when graceful degradation is possible.
 
-- Bootstrap/plugin entry: `billboardy-map-api.php`
-- Admin settings: `src/Admin/`
-- Domain mapping: `src/Domain/`
-- Data access: `src/Repository/`
-- REST controllers: `src/Rest/`
-- Application service layer: `src/Service/`
+## Frontend Guidelines
 
-Main API endpoints:
-
-- `GET /wp-json/billboardy/v1/ad-spaces`
-- `GET /wp-json/billboardy/v1/map-points`
-- `GET /wp-json/billboardy/v1/ad-spaces/{id}`
-- `GET /wp-json/billboardy/v1/filters`
-
-Backend implementation rules:
-
-- Keep the public API contract stable and domain-oriented.
-- Keep WooCommerce-specific logic inside repository and mapper layers.
-- Return safe fallback objects where possible.
-- Exclude invalid-coordinate items from `/map-points`, but keep them available in `/ad-spaces`.
-- Keep cache invalidation versioned through the plugin cache version option unless there is a strong reason to replace it.
-- Do not add checkout/sales behavior unless explicitly requested.
-- Do not generate SEO pages per individual advertising space for the MVP.
-
-Useful backend check:
-
-```powershell
-Get-ChildItem -Path billboardy-map-api -Recurse -Filter *.php | ForEach-Object { php -l $_.FullName }
-```
-
-## Frontend: `map-frontend`
-
-The frontend is an official Astro project with Tailwind added through Astro tooling.
-
-Important files:
-
-- `src/pages/index.astro`
-- `src/scripts/map.ts`
-- `src/styles/global.css`
-- `.env.example`
-
-Frontend implementation rules:
-
-- Keep all visible UI strings in Slovak.
-- Read configuration through public Astro env variables or `window.BILLBOARDY_MAP_CONFIG`.
-- Use only these backend API calls:
-  - `/filters`
-  - `/map-points`
-  - `/ad-spaces/{id}`
-- Keep map payloads light; use `/map-points` for marker rendering and fetch full detail only on click.
-- Keep clustering enabled for the current ~2000 point dataset.
-- Do not assume the frontend and WordPress are on the same origin; preserve CORS-friendly API usage.
-
-Frontend commands:
-
-```powershell
-cd map-frontend
-npm install
-npm run dev
-npm run check
-npm run build
-```
-
-Expected verification:
-
-- `npm run check` should have no errors.
-- `npm run build` should complete and write `map-frontend/dist/`.
-- TypeScript may currently show non-blocking hints that `google.maps.Marker` is deprecated. Do not migrate to `AdvancedMarkerElement` unless the task explicitly includes that refactor.
-
-## Data Mapping Expectations
-
-The source WooCommerce data is imperfect. Preserve these mapping behaviors:
-
-- `id`: stable API ID in the form `wc_{productId}`.
-- `sourceId`: WooCommerce product ID.
-- `code`: SKU/catalog number first, fallback from title like `4781 - BILLBOARD`.
-- `mediaType`: normalized machine value such as `billboard`, `bigboard`, `citylight`, or `unknown`.
-- `mediaTypeLabel`: Slovak-facing display label.
-- `locationLabel`: clean short location text, without leading `v lokalite`.
-- `city`: normalize Bratislava variants to `Bratislava`.
-- `latitude` and `longitude`: primary source `_gps`, fallback from description.
-- `sizeLabel`, `widthCm`, `heightCm`: parse from `Rozmer` in description when possible.
-- `descriptionHtml`: sanitized description only; do not use it as the primary source for structured fields.
-- Missing image: use configured placeholder when available.
-
-## Current Workspace Notes
-
-- `wc-adsPlaces.csv` is an export/reference file, not the runtime source for the plugin.
-- The runtime source remains WooCommerce products in WordPress.
-- The current export suggests all records are `Billboard`, mostly `visible`, mostly in Bratislava, and almost all have GPS.
+- Keep payloads as small as practical.
+- Avoid unnecessary rerenders, full teardown/rebuild cycles, and large DOM bursts.
+- Prefer incremental updates when the UI changes frequently.
+- Load detailed data lazily when it is not required for the initial view.
+- Treat network calls as unreliable: show sane loading, empty, and error states.
+- Do not assume frontend and backend are always on the same origin.
 
 ## Editing Guidelines
 
-- Keep backend and frontend changes scoped to their folders.
-- Prefer small, explicit changes over broad rewrites.
-- Do not delete or overwrite generated dependency folders unless the task requires reinstalling or rebuilding dependencies.
-- Do not commit secrets. Google Maps API keys belong in environment/config, not source files.
-- Keep docs updated when changing setup, endpoints, or deployment assumptions.
+- Update documentation when setup, build, deployment, or public behavior changes.
+- Before creating a commit, make sure the relevant files in `docs/` are updated to match the changes that were made.
+- Do not delete generated folders or dependency directories unless the task requires it.
+- Do not overwrite user data or unrelated local changes.
+- Before introducing a new dependency, prefer existing platform or project tooling if it already solves the problem well.
+
+## Verification
+
+- Run the smallest useful verification for the scope of the change.
+- For backend code, prefer syntax and targeted behavior checks.
+- For frontend code, run type/check/build commands when the touched area requires it.
+- If something could not be verified locally, state that clearly.

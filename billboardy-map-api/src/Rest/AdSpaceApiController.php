@@ -63,7 +63,7 @@ final class AdSpaceApiController
 
     public function mapPoints(\WP_REST_Request $request): \WP_REST_Response
     {
-        return $this->response($this->service->mapPoints($this->requestParams($request)));
+        return $this->response($this->service->mapPoints($this->requestParams($request)), 300);
     }
 
     public function adSpace(\WP_REST_Request $request)
@@ -87,13 +87,17 @@ final class AdSpaceApiController
     {
         return $this->response([
             'data' => $this->service->filters(),
-        ]);
+        ], 300);
     }
 
-    private function response(array $payload): \WP_REST_Response
+    private function response(array $payload, int $publicMaxAge = 0): \WP_REST_Response
     {
         $response = new \WP_REST_Response($payload);
         $origin = $this->allowedOrigin();
+
+        if ($publicMaxAge > 0) {
+            $response->header('Cache-Control', 'public, max-age=' . $publicMaxAge . ', stale-while-revalidate=60');
+        }
 
         if ($origin !== '') {
             $response->header('Access-Control-Allow-Origin', $origin);

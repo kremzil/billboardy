@@ -105,6 +105,23 @@ type BillboardyClusterMarker = ClusterMarker & {
   __billboardyMediaType?: string;
 };
 
+type RenderMode = 'direct' | 'clusterer';
+
+type RenderedMarkerEntry = {
+  marker: BillboardyMarker;
+  signature: string;
+  mode: RenderMode;
+};
+
+type MarkerSpec = {
+  key: string;
+  signature: string;
+  mode: RenderMode;
+  position: google.maps.LatLngLiteral;
+  create: () => BillboardyMarker;
+  bind: (marker: BillboardyMarker) => void;
+};
+
 const strings = {
   title: 'Mapa reklamných plôch',
   intro: 'Vyberte si plochu podľa lokality, typu alebo katalógového čísla.',
@@ -160,6 +177,7 @@ const state: {
   map: google.maps.Map | null;
   clusterer: MarkerClusterer | null;
   markers: BillboardyMarker[];
+  renderedMarkers: Map<string, RenderedMarkerEntry>;
   markerById: Map<string, BillboardyMarker>;
   markerGroupById: Map<string, CoordinateMarkerGroup>;
   infoWindow: google.maps.InfoWindow | null;
@@ -173,6 +191,7 @@ const state: {
   map: null,
   clusterer: null,
   markers: [],
+  renderedMarkers: new Map(),
   markerById: new Map(),
   markerGroupById: new Map(),
   infoWindow: null,
@@ -519,67 +538,22 @@ function renderMarkers(container: HTMLElement, items: MapItem[], fitToResults: b
   }
 
   mustGet<HTMLElement>('.bb-map-stage', container).classList.add('is-ready');
-  clearRenderedMarkers();
 
   const bounds = new google.maps.LatLngBounds();
-
   const markerGroups = groupPointsByCoordinate(items.filter(isMapPoint));
   const clusters = items.filter(isMapCluster);
+  const renderMode: RenderMode = clusters.length > 0 ? 'direct' : 'clusterer';
+  const specs = [
+    ...clusters.map((cluster) => clusterMarkerSpec(cluster, renderMode)),
+    ...markerGroups.map((group) => pointGroupMarkerSpec(group, renderMode)),
+  ];
 
-  const clusterMarkers = clusters.map((cluster) => {
-    const marker = new google.maps.marker.AdvancedMarkerElement({
-      position: { lat: cluster.latitude, lng: cluster.longitude },
-      title: `${cluster.count} ${strings.spaces}`,
-      content: markerContent(cluster.mediaType, cluster.count, 'server-cluster'),
-      gmpClickable: true,
-    }) as BillboardyMarker;
-    marker.__billboardyMediaType = normalizeMarkerMediaType(cluster.mediaType);
+  state.markerById.clear();
+  state.markerGroupById.clear();
+  state.markers = diffRenderedMarkers(specs, renderMode);
 
-    marker.addEventListener('gmp-click', () => {
-      focusCluster(cluster);
-    });
-
-    bounds.extend({ lat: cluster.latitude, lng: cluster.longitude });
-    return marker;
-  });
-
-  const pointMarkers = markerGroups.map((group) => {
-    const marker = new google.maps.marker.AdvancedMarkerElement({
-      position: { lat: group.point.latitude, lng: group.point.longitude },
-      title: group.points.length > 1 ? `${group.points.length} ${strings.spaces} - ${group.point.locationLabel}` : group.point.title,
-      content: markerContent(group.point.mediaType, group.points.length, group.points.length > 1 ? 'same-location' : 'point'),
-      gmpClickable: true,
-    }) as BillboardyMarker;
-    marker.__billboardyMediaType = normalizeMarkerMediaType(group.point.mediaType);
-
-    marker.addEventListener('gmp-click', () => {
-      if (group.points.length > 1) {
-        openCoordinateGroup(group, marker);
-        return;
-      }
-
-      void openPoint(group.point, marker);
-    });
-
-    bounds.extend({ lat: group.point.latitude, lng: group.point.longitude });
-    for (const point of group.points) {
-      state.markerById.set(point.id, marker);
-      state.markerGroupById.set(point.id, group);
-    }
-
-    return marker;
-  });
-
-  state.markers = [...clusterMarkers, ...pointMarkers];
-
-  if (clusters.length > 0) {
-    state.markers.forEach((marker) => setMarkerMap(marker, state.map));
-  } else {
-    state.clusterer = new MarkerClusterer({
-      map: state.map,
-      markers: state.markers,
-      renderer: markerClusterRenderer,
-    });
+  for (const spec of specs) {
+    bounds.extend(spec.position);
   }
 
   if (!fitToResults) {
@@ -597,17 +571,184 @@ function renderMarkers(container: HTMLElement, items: MapItem[], fitToResults: b
   }
 }
 
-function clearRenderedMarkers(): void {
-  if (state.clusterer) {
+function diffRenderedMarkers(specs: MarkerSpec[], renderMode: RenderMode): BillboardyMarker[] {
+  if (renderMode === 'direct' && state.clusterer) {
     state.clusterer.clearMarkers(true);
     state.clusterer.setMap(null);
     state.clusterer = null;
   }
 
-  state.markers.forEach((marker) => setMarkerMap(marker, null));
-  state.markers = [];
-  state.markerById.clear();
-  state.markerGroupById.clear();
+  const desiredKeys = new Set(specs.map((spec) => spec.key));
+  const clustererMarkersToAdd: BillboardyMarker[] = [];
+  const clustererMarkersToRemove: BillboardyMarker[] = [];
+  const markers: BillboardyMarker[] = [];
+
+  for (const [key, entry] of state.renderedMarkers.entries()) {
+    if (!desiredKeys.has(key)) {
+      removeRenderedMarker(entry, clustererMarkersToRemove);
+      state.renderedMarkers.delete(key);
+    }
+  }
+
+  for (const spec of specs) {
+    const existing = state.renderedMarkers.get(spec.key);
+    let marker = existing?.marker;
+
+    if (existing && (existing.signature !== spec.signature || existing.mode !== spec.mode)) {
+      removeRenderedMarker(existing, clustererMarkersToRemove);
+      state.renderedMarkers.delete(spec.key);
+      marker = undefined;
+    }
+
+    if (!marker) {
+      marker = spec.create();
+      state.renderedMarkers.set(spec.key, {
+        marker,
+        signature: spec.signature,
+        mode: spec.mode,
+      });
+
+      if (spec.mode === 'clusterer') {
+        clustererMarkersToAdd.push(marker);
+      }
+    }
+
+    spec.bind(marker);
+    markers.push(marker);
+
+    if (spec.mode === 'direct') {
+      setMarkerMap(marker, state.map);
+    }
+  }
+
+  if (renderMode === 'clusterer') {
+    syncClusterer(markers, clustererMarkersToAdd, clustererMarkersToRemove);
+  }
+
+  return markers;
+}
+
+function removeRenderedMarker(entry: RenderedMarkerEntry, clustererMarkersToRemove: BillboardyMarker[]): void {
+  if (entry.mode === 'clusterer' && state.clusterer) {
+    clustererMarkersToRemove.push(entry.marker);
+    return;
+  }
+
+  setMarkerMap(entry.marker, null);
+}
+
+function syncClusterer(markers: BillboardyMarker[], markersToAdd: BillboardyMarker[], markersToRemove: BillboardyMarker[]): void {
+  if (!state.map) {
+    return;
+  }
+
+  if (!state.clusterer) {
+    state.clusterer = new MarkerClusterer({
+      map: state.map,
+      markers,
+      renderer: markerClusterRenderer,
+    });
+    return;
+  }
+
+  if (markersToRemove.length > 0) {
+    state.clusterer.removeMarkers(markersToRemove as ClusterMarker[], true);
+    markersToRemove.forEach((marker) => setMarkerMap(marker, null));
+  }
+
+  if (markersToAdd.length > 0) {
+    state.clusterer.addMarkers(markersToAdd as ClusterMarker[], true);
+  }
+
+  if (markersToAdd.length > 0 || markersToRemove.length > 0) {
+    state.clusterer.render();
+  }
+}
+
+function clusterMarkerSpec(cluster: MapCluster, mode: RenderMode): MarkerSpec {
+  const mediaType = normalizeMarkerMediaType(cluster.mediaType);
+  const position = { lat: cluster.latitude, lng: cluster.longitude };
+
+  return {
+    key: `cluster:${cluster.id}`,
+    signature: [
+      cluster.latitude.toFixed(6),
+      cluster.longitude.toFixed(6),
+      cluster.count,
+      mediaType,
+      cluster.bounds.north.toFixed(6),
+      cluster.bounds.south.toFixed(6),
+      cluster.bounds.east.toFixed(6),
+      cluster.bounds.west.toFixed(6),
+    ].join('|'),
+    mode,
+    position,
+    create: () => {
+      const marker = new google.maps.marker.AdvancedMarkerElement({
+        position,
+        title: `${cluster.count} ${strings.spaces}`,
+        content: markerContent(mediaType, cluster.count, 'server-cluster'),
+        gmpClickable: true,
+      }) as BillboardyMarker;
+      marker.__billboardyMediaType = mediaType;
+      marker.addEventListener('gmp-click', () => {
+        focusCluster(cluster);
+      });
+
+      return marker;
+    },
+    bind: (marker) => {
+      marker.__billboardyMediaType = mediaType;
+    },
+  };
+}
+
+function pointGroupMarkerSpec(group: CoordinateMarkerGroup, mode: RenderMode): MarkerSpec {
+  const mediaType = normalizeMarkerMediaType(group.point.mediaType);
+  const position = { lat: group.point.latitude, lng: group.point.longitude };
+  const pointIds = group.points.map((point) => point.id).join(',');
+
+  return {
+    key: `point:${group.id}`,
+    signature: [
+      group.point.latitude.toFixed(6),
+      group.point.longitude.toFixed(6),
+      group.points.length,
+      pointIds,
+      mediaType,
+      group.point.title,
+      group.point.locationLabel,
+    ].join('|'),
+    mode,
+    position,
+    create: () => {
+      const marker = new google.maps.marker.AdvancedMarkerElement({
+        position,
+        title: group.points.length > 1 ? `${group.points.length} ${strings.spaces} - ${group.point.locationLabel}` : group.point.title,
+        content: markerContent(group.point.mediaType, group.points.length, group.points.length > 1 ? 'same-location' : 'point'),
+        gmpClickable: true,
+      }) as BillboardyMarker;
+      marker.__billboardyMediaType = mediaType;
+      marker.addEventListener('gmp-click', () => {
+        if (group.points.length > 1) {
+          openCoordinateGroup(group, marker);
+          return;
+        }
+
+        void openPoint(group.point, marker);
+      });
+
+      return marker;
+    },
+    bind: (marker) => {
+      marker.__billboardyMediaType = mediaType;
+
+      for (const point of group.points) {
+        state.markerById.set(point.id, marker);
+        state.markerGroupById.set(point.id, group);
+      }
+    },
+  };
 }
 
 function setMarkerMap(marker: BillboardyMarker, map: google.maps.Map | null): void {

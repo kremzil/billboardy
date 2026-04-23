@@ -5,6 +5,8 @@ This workspace contains two separated parts:
 - `billboardy-map-api`: WordPress plugin that exposes a clean REST API backed by WooCommerce products or the dedicated imported map table.
 - `map-frontend`: standalone Astro + Tailwind frontend created with the official Astro scaffold.
 
+Project documentation lives in `docs/`. Start with `docs/README.md`.
+
 The frontend is intentionally not bundled into the WordPress plugin. This keeps the direction open for a future Astro frontend over a WordPress backend.
 
 ## Backend

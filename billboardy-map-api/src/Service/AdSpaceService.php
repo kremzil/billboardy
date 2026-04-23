@@ -11,6 +11,8 @@ use Billboardy\MapApi\Repository\AdSpaceRepositoryInterface;
 
 final class AdSpaceService
 {
+    private const MAX_RAW_MAP_POINTS = 800;
+
     private AdSpaceRepositoryInterface $repository;
     private AdSpaceMapper $mapper;
 
@@ -83,7 +85,9 @@ final class AdSpaceService
         }
 
         $points = $this->dedupeMapPoints($points);
-        $mode = $zoom >= 12 || trim((string) ($params['search'] ?? '')) !== '' ? 'points' : 'clusters';
+        $search = trim((string) ($params['search'] ?? ''));
+        $tooManyRawPoints = count($points) > self::MAX_RAW_MAP_POINTS;
+        $mode = ($zoom >= 12 || $search !== '') && !$tooManyRawPoints ? 'points' : 'clusters';
         $items = $mode === 'points' ? $points : $this->clusterPoints($points, $zoom);
 
         $result = [
@@ -247,7 +251,7 @@ final class AdSpaceService
     private function normalizeMapPointParams(array $params): array
     {
         $zoom = max(1, min(21, (int) ($params['zoom'] ?? 12)));
-        $precision = $zoom >= 13 ? 4 : ($zoom >= 10 ? 3 : 2);
+        $gridSize = $this->boundsGridSize($zoom);
 
         $normalized = [
             'zoom' => $zoom,
@@ -256,15 +260,62 @@ final class AdSpaceService
             'search' => isset($params['search']) ? trim((string) $params['search']) : '',
         ];
 
-        foreach (['north', 'south', 'east', 'west'] as $key) {
-            if (!isset($params[$key]) || $params[$key] === '' || $params[$key] === null) {
-                continue;
-            }
-
-            $normalized[$key] = round((float) $params[$key], $precision);
+        if ($this->hasRawBounds($params)) {
+            $normalized['north'] = $this->snapCoordinate((float) $params['north'], $gridSize, 'ceil');
+            $normalized['east'] = $this->snapCoordinate((float) $params['east'], $gridSize, 'ceil');
+            $normalized['south'] = $this->snapCoordinate((float) $params['south'], $gridSize, 'floor');
+            $normalized['west'] = $this->snapCoordinate((float) $params['west'], $gridSize, 'floor');
         }
 
         return $normalized;
+    }
+
+    /**
+     * @param array<string, mixed> $params
+     */
+    private function hasRawBounds(array $params): bool
+    {
+        foreach (['north', 'south', 'east', 'west'] as $key) {
+            if (!isset($params[$key]) || $params[$key] === '' || $params[$key] === null) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    private function boundsGridSize(int $zoom): float
+    {
+        if ($zoom <= 7) {
+            return 0.5;
+        }
+
+        if ($zoom <= 9) {
+            return 0.25;
+        }
+
+        if ($zoom <= 11) {
+            return 0.1;
+        }
+
+        if ($zoom <= 13) {
+            return 0.04;
+        }
+
+        if ($zoom <= 15) {
+            return 0.02;
+        }
+
+        return 0.01;
+    }
+
+    private function snapCoordinate(float $value, float $gridSize, string $direction): float
+    {
+        $snapped = $direction === 'ceil'
+            ? ceil($value / $gridSize) * $gridSize
+            : floor($value / $gridSize) * $gridSize;
+
+        return round($snapped, 6);
     }
 
     /**
