@@ -1,19 +1,14 @@
 ---
-import '../styles/global.css';
+import Layout from "../layouts/layout.astro"
+import MainHero from "../components/mainHero.astro"
+import SliderSection from "../components/sliderSection.astro"
+import MapSection from "../components/MapSection.astro"
+
 ---
 
-<html lang="sk">
-	<head>
-		<meta charset="utf-8" />
-		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-		<link rel="icon" href="/favicon.ico" />
-		<meta name="viewport" content="width=device-width, initial-scale=1" />
-		<meta name="generator" content={Astro.generator} />
-		<meta name="description" content="Interaktívna mapa reklamných plôch Billboardy.sk." />
-		<title>Mapa reklamných plôch | Billboardy.sk</title>
-	</head>
-	<body class="min-h-screen bg-bb-surface text-bb-ink">
-		<main id="billboardy-map-app" class="min-h-screen"></main>
-		<script src="../scripts/map.ts"></script>
-	</body>
-</html>
+<Layout>
+
+        <MainHero />
+		<SliderSection />
+		<MapSection />
+</Layout>

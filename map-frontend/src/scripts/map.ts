@@ -90,6 +90,16 @@ type AdSpace = MapPoint & {
   excerpt: string;
 };
 
+type AdSpacesPayload = {
+  data: AdSpace[];
+  pagination: {
+    page: number;
+    perPage: number;
+    total: number;
+    totalPages: number;
+  };
+};
+
 type CoordinateMarkerGroup = {
   id: string;
   point: MapPoint;
@@ -171,6 +181,9 @@ const config: MapConfig = {
 
 const mapPayloadCache = new Map<string, MapPayload>();
 const maxMapPayloadCacheEntries = 40;
+const selectionPageSize = 10;
+// Keep the visible-area list hidden until the user is close to individual points.
+const selectionMinZoom = 12;
 
 const state: {
   map: google.maps.Map | null;
@@ -181,12 +194,13 @@ const state: {
   markerGroupById: Map<string, CoordinateMarkerGroup>;
   infoWindow: google.maps.InfoWindow | null;
   detailsCache: Map<string, AdSpace>;
-  cardGroups: Map<string, MapPoint[]>;
-  cardClusters: Map<string, MapCluster>;
   points: MapPoint[];
   items: MapItem[];
   mapRequestController: AbortController | null;
+  selectionRequestController: AbortController | null;
+  selectionPage: number;
   requestSeq: number;
+  selectionRequestSeq: number;
 } = {
   map: null,
   clusterer: null,
@@ -196,12 +210,13 @@ const state: {
   markerGroupById: new Map(),
   infoWindow: null,
   detailsCache: new Map(),
-  cardGroups: new Map(),
-  cardClusters: new Map(),
   points: [],
   items: [],
   mapRequestController: null,
+  selectionRequestController: null,
+  selectionPage: 1,
   requestSeq: 0,
+  selectionRequestSeq: 0,
 };
 
 let googleMapsPromise: Promise<void> | null = null;
@@ -212,7 +227,10 @@ if (!root) {
   throw new Error('Missing #billboardy-map-app root element.');
 }
 
-renderShell(root);
+if (!root.querySelector('.bb-map-canvas')) {
+  renderShell(root);
+}
+
 void boot(root);
 
 async function boot(container: HTMLElement): Promise<void> {
@@ -281,10 +299,10 @@ function renderShell(container: HTMLElement): void {
       <div class="bb-map-stage">
         <div class="bb-map-status" role="status" aria-live="polite">${strings.loading}</div>
         <div class="bb-map-canvas" aria-label="${strings.title}"></div>
-        <aside class="bb-map-results" aria-label="${strings.selection}">
+        <aside class="bb-map-results" aria-label="${strings.selection}" hidden>
           <div class="bb-map-results-head">
             <h2>${strings.selection}</h2>
-            <p>${strings.loading}</p>
+            <p>Priblížte mapu pre výber plôch v aktuálnej oblasti.</p>
           </div>
           <div class="bb-map-results-list"></div>
         </aside>
@@ -299,6 +317,7 @@ function populateFilters(container: HTMLElement, filters: FiltersPayload): void 
 
   appendOptions(mediaSelect, filters.mediaTypes, strings.allTypes);
   appendOptions(citySelect, filters.cities, strings.allCities);
+  renderMediaFilterPills(container, filters.mediaTypes);
   mediaSelect.disabled = false;
   citySelect.disabled = false;
 }
@@ -314,12 +333,32 @@ function appendOptions(select: HTMLSelectElement, options: FilterOption[], fallb
   }
 }
 
+function renderMediaFilterPills(container: HTMLElement, options: FilterOption[]): void {
+  const pills = container.querySelector<HTMLElement>('[data-map-filter-pills]');
+
+  if (!pills) {
+    return;
+  }
+
+  pills.innerHTML = [
+    `<button type="button" class="bb-map-filter-pill is-active" data-filter-value="" aria-pressed="true">${strings.allTypes.replace(' typy', '')}</button>`,
+    ...options.map((option) => (
+      `<button type="button" class="bb-map-filter-pill" data-filter-value="${escapeAttribute(option.value)}" aria-pressed="false">${escapeHtml(option.label)}</button>`
+    )),
+  ].join('');
+}
+
 function bindControls(container: HTMLElement): void {
   const form = mustGet<HTMLFormElement>('.bb-map-filters', container);
   const results = mustGet<HTMLElement>('.bb-map-results-list', container);
+  const mediaSelect = container.querySelector<HTMLSelectElement>('select[name="media_type"]');
+  const filterToggle = container.querySelector<HTMLButtonElement>('[data-filter-toggle]');
+  const advancedFilters = container.querySelector<HTMLElement>('#bb-map-advanced');
   let searchTimer = window.setTimeout(() => undefined, 0);
 
   form.addEventListener('change', () => {
+    syncMediaFilterPills(container);
+    state.selectionPage = 1;
     void refreshPoints(container, { includeBounds: true, fitToResults: false });
   });
 
@@ -330,14 +369,40 @@ function bindControls(container: HTMLElement): void {
 
     window.clearTimeout(searchTimer);
     searchTimer = window.setTimeout(() => {
+      state.selectionPage = 1;
       void refreshPoints(container, { includeBounds: true, fitToResults: false });
     }, 260);
   });
 
   form.addEventListener('reset', () => {
     window.setTimeout(() => {
+      syncMediaFilterPills(container);
+      state.selectionPage = 1;
       void refreshPoints(container, { includeBounds: true, fitToResults: false });
     }, 0);
+  });
+
+  container.addEventListener('click', (event) => {
+    const pill = event.target instanceof Element ? event.target.closest<HTMLButtonElement>('[data-filter-value]') : null;
+
+    if (!pill || !mediaSelect) {
+      return;
+    }
+
+    mediaSelect.value = pill.dataset.filterValue ?? '';
+    syncMediaFilterPills(container);
+    state.selectionPage = 1;
+    void refreshPoints(container, { includeBounds: true, fitToResults: false });
+  });
+
+  filterToggle?.addEventListener('click', () => {
+    if (!advancedFilters) {
+      return;
+    }
+
+    const nextExpanded = advancedFilters.hidden;
+    advancedFilters.hidden = !nextExpanded;
+    filterToggle.setAttribute('aria-expanded', String(nextExpanded));
   });
 
   results.addEventListener('click', (event) => {
@@ -361,21 +426,23 @@ function bindControls(container: HTMLElement): void {
       }
     }
 
-    if (action === 'focus-group') {
-      const points = state.cardGroups.get(id);
+    if (action === 'focus-ad-space') {
+      const adSpace = state.detailsCache.get(id);
 
-      if (points && state.map) {
-        fitToPoints(points, 80);
+      if (adSpace) {
+        void focusAdSpace(adSpace);
       }
     }
 
-    if (action === 'focus-cluster') {
-      const cluster = state.cardClusters.get(id);
+    if (action === 'selection-page') {
+      const page = Number(target.dataset.selectionPage ?? '1');
 
-      if (cluster) {
-        focusCluster(cluster);
+      if (Number.isFinite(page) && page >= 1) {
+        state.selectionPage = page;
+        void refreshSelectionResults(container);
       }
     }
+
   });
 
   document.addEventListener('click', (event) => {
@@ -396,6 +463,17 @@ function bindControls(container: HTMLElement): void {
   });
 }
 
+function syncMediaFilterPills(container: HTMLElement): void {
+  const mediaSelect = container.querySelector<HTMLSelectElement>('select[name="media_type"]');
+  const value = mediaSelect?.value ?? '';
+
+  for (const pill of container.querySelectorAll<HTMLButtonElement>('[data-filter-value]')) {
+    const isActive = (pill.dataset.filterValue ?? '') === value;
+    pill.classList.toggle('is-active', isActive);
+    pill.setAttribute('aria-pressed', String(isActive));
+  }
+}
+
 function bindMapViewport(container: HTMLElement): void {
   if (!state.map) {
     return;
@@ -406,6 +484,7 @@ function bindMapViewport(container: HTMLElement): void {
   state.map.addListener('idle', () => {
     window.clearTimeout(viewportTimer);
     viewportTimer = window.setTimeout(() => {
+      state.selectionPage = 1;
       void refreshPoints(container, { includeBounds: true, fitToResults: false });
     }, 320);
   });
@@ -496,9 +575,10 @@ async function refreshPoints(
   state.items = payload.items ?? [];
   state.points = state.items.filter(isMapPoint);
   renderMarkers(container, state.items, options.fitToResults);
-  renderResultCards(container, state.items, payload.meta);
+  void refreshSelectionResults(container);
 
   if (state.items.length === 0) {
+    updateMapSummary(container, strings.empty);
     setStatus(status, strings.empty, 'empty');
     return;
   }
@@ -506,7 +586,280 @@ async function refreshPoints(
   const total = payload.meta?.total ?? state.points.length;
   const returned = payload.meta?.returned ?? state.items.length;
   const modeLabel = payload.mode === 'clusters' ? strings.areas : strings.spaces;
+  updateMapSummary(container, `${total} ${strings.spaces} dostupných · Slovensko`);
   setStatus(status, `${strings.count}: ${total}. ${returned} ${modeLabel}`, 'ready');
+}
+
+function updateMapSummary(container: HTMLElement, message: string): void {
+  const summary = container.querySelector<HTMLElement>('[data-map-summary]');
+
+  if (summary) {
+    summary.textContent = message;
+  }
+}
+
+async function refreshSelectionResults(container: HTMLElement): Promise<void> {
+  const results = container.querySelector<HTMLElement>('.bb-map-results');
+
+  if (!results || !state.map) {
+    return;
+  }
+
+  const zoom = Math.round(state.map.getZoom() ?? config.defaultZoom);
+
+  if (zoom < selectionMinZoom) {
+    state.selectionRequestController?.abort();
+    hideSelectionResults(container);
+    return;
+  }
+
+  const bounds = state.map.getBounds();
+
+  if (!bounds) {
+    hideSelectionResults(container);
+    return;
+  }
+
+  const requestId = ++state.selectionRequestSeq;
+  state.selectionRequestController?.abort();
+  const controller = new AbortController();
+  state.selectionRequestController = controller;
+  showSelectionLoading(container);
+
+  const params = selectionRequestParams(container, bounds, zoom);
+  const url = `${config.apiBase}/ad-spaces?${params.toString()}`;
+
+  try {
+    const payload = await fetchJson<AdSpacesPayload>(url, { signal: controller.signal });
+
+    if (controller.signal.aborted || requestId !== state.selectionRequestSeq) {
+      return;
+    }
+
+    renderSelectionCards(container, payload);
+  } catch (error) {
+    if (isAbortError(error) || controller.signal.aborted || requestId !== state.selectionRequestSeq) {
+      return;
+    }
+
+    console.error('Unable to load visible ad spaces.', error);
+    renderSelectionError(container);
+  } finally {
+    if (state.selectionRequestController === controller) {
+      state.selectionRequestController = null;
+    }
+  }
+}
+
+function selectionRequestParams(container: HTMLElement, bounds: google.maps.LatLngBounds, zoom: number): URLSearchParams {
+  const params = new URLSearchParams();
+  const form = container.querySelector<HTMLFormElement>('.bb-map-filters');
+
+  if (form) {
+    const formData = new FormData(form);
+
+    for (const [key, value] of formData.entries()) {
+      const text = String(value).trim();
+
+      if (text !== '') {
+        params.set(key, text);
+      }
+    }
+  }
+
+  const viewport = serializableViewportBounds(bounds);
+  params.set('north', viewport.north.toString());
+  params.set('east', viewport.east.toString());
+  params.set('south', viewport.south.toString());
+  params.set('west', viewport.west.toString());
+  params.set('zoom', String(zoom));
+  params.set('page', String(state.selectionPage));
+  params.set('per_page', String(selectionPageSize));
+
+  return params;
+}
+
+function serializableViewportBounds(bounds: google.maps.LatLngBounds): MapBoundsPayload {
+  const northEast = bounds.getNorthEast();
+  const southWest = bounds.getSouthWest();
+
+  return {
+    north: roundCoordinate(northEast.lat(), 5),
+    east: roundCoordinate(northEast.lng(), 5),
+    south: roundCoordinate(southWest.lat(), 5),
+    west: roundCoordinate(southWest.lng(), 5),
+  };
+}
+
+function hideSelectionResults(container: HTMLElement): void {
+  const results = container.querySelector<HTMLElement>('.bb-map-results');
+  const head = container.querySelector<HTMLElement>('.bb-map-results-head p');
+  const list = container.querySelector<HTMLElement>('.bb-map-results-list');
+
+  if (results) {
+    results.hidden = true;
+    results.classList.remove('is-visible', 'is-loading');
+  }
+
+  if (head) {
+    head.textContent = 'Priblížte mapu pre výber plôch v aktuálnej oblasti.';
+  }
+
+  if (list) {
+    list.innerHTML = '';
+  }
+}
+
+function showSelectionLoading(container: HTMLElement): void {
+  const results = mustGet<HTMLElement>('.bb-map-results', container);
+  const head = mustGet<HTMLElement>('.bb-map-results-head p', container);
+  const list = mustGet<HTMLElement>('.bb-map-results-list', container);
+  const keepCurrentList = results.classList.contains('is-visible') && list.childElementCount > 0;
+
+  results.hidden = false;
+  results.classList.add('is-visible', 'is-loading');
+  head.textContent = 'Načítavam 10 plôch v aktuálnej oblasti...';
+  list.setAttribute('aria-busy', 'true');
+
+  if (!keepCurrentList) {
+    list.innerHTML = '<div class="bb-map-results-loading">Načítavam...</div>';
+  }
+}
+
+function renderSelectionCards(container: HTMLElement, payload: AdSpacesPayload): void {
+  const results = mustGet<HTMLElement>('.bb-map-results', container);
+  const head = mustGet<HTMLElement>('.bb-map-results-head p', container);
+  const list = mustGet<HTMLElement>('.bb-map-results-list', container);
+  const page = payload.pagination.page;
+  const totalPages = Math.max(1, payload.pagination.totalPages);
+  const total = payload.pagination.total;
+
+  results.hidden = false;
+  results.classList.add('is-visible');
+  results.classList.remove('is-loading');
+  list.removeAttribute('aria-busy');
+
+  if (total === 0) {
+    head.textContent = 'V aktuálnej oblasti nie sú žiadne plochy.';
+    list.innerHTML = '';
+    return;
+  }
+
+  head.textContent = `${total} plôch v aktuálnej oblasti. Zobrazené ${payload.data.length} z ${selectionPageSize}.`;
+
+  for (const adSpace of payload.data) {
+    state.detailsCache.set(adSpace.id, adSpace);
+  }
+
+  const cards = payload.data.map((adSpace) => selectionCard(adSpace)).join('');
+  const pagination = totalPages > 1 ? selectionPagination(page, totalPages) : '';
+  list.innerHTML = cards + pagination;
+}
+
+function selectionCard(adSpace: AdSpace): string {
+  const image = adSpace.imageUrl || config.placeholderImageUrl;
+
+  return `
+    <article class="bb-map-result-card" data-card-action="focus-ad-space" data-card-id="${escapeAttribute(adSpace.id)}">
+      ${image ? `<img src="${escapeAttribute(image)}" alt="${escapeAttribute(adSpace.title)}" loading="lazy" />` : ''}
+      <div class="bb-map-result-body">
+        <strong>${escapeHtml(adSpace.title)}</strong>
+        <span>${escapeHtml(adSpace.locationLabel)}</span>
+        ${adSpace.sizeLabel ? `<small>${escapeHtml(adSpace.sizeLabel)}</small>` : ''}
+      </div>
+      <button type="button" class="bb-map-card-action" data-card-action="focus-ad-space" data-card-id="${escapeAttribute(adSpace.id)}">
+        ${strings.showOnMap}
+      </button>
+    </article>
+  `;
+}
+
+function selectionPagination(page: number, totalPages: number): string {
+  const previousPage = Math.max(1, page - 1);
+  const nextPage = Math.min(totalPages, page + 1);
+
+  return `
+    <nav class="bb-map-results-pagination" aria-label="Stránkovanie výberu">
+      <button type="button" data-card-action="selection-page" data-selection-page="${previousPage}" ${page <= 1 ? 'disabled' : ''}>Predošlé</button>
+      <span>${page} / ${totalPages}</span>
+      <button type="button" data-card-action="selection-page" data-selection-page="${nextPage}" ${page >= totalPages ? 'disabled' : ''}>Ďalšie</button>
+    </nav>
+  `;
+}
+
+function renderSelectionError(container: HTMLElement): void {
+  const results = mustGet<HTMLElement>('.bb-map-results', container);
+  const head = mustGet<HTMLElement>('.bb-map-results-head p', container);
+  const list = mustGet<HTMLElement>('.bb-map-results-list', container);
+
+  results.hidden = false;
+  results.classList.add('is-visible');
+  results.classList.remove('is-loading');
+  list.removeAttribute('aria-busy');
+  head.textContent = strings.error;
+  list.innerHTML = '';
+}
+
+async function focusAdSpace(adSpace: AdSpace): Promise<void> {
+  if (!state.map || !state.infoWindow) {
+    return;
+  }
+
+  const point = adSpacePoint(adSpace);
+
+  if (!point) {
+    return;
+  }
+
+  const position = { lat: point.latitude, lng: point.longitude };
+  const marker = state.markerById.get(point.id);
+
+  state.map.panTo(position);
+  state.map.setZoom(Math.max(state.map.getZoom() ?? 14, 15));
+
+  if (marker) {
+    await openPoint(point, marker, true);
+    return;
+  }
+
+  google.maps.event.addListenerOnce(state.map, 'idle', () => {
+    const nextMarker = state.markerById.get(point.id);
+
+    if (nextMarker) {
+      void openPoint(point, nextMarker, true);
+      return;
+    }
+
+    if (!state.map || !state.infoWindow) {
+      return;
+    }
+
+    state.infoWindow.setContent(popupContent(adSpace));
+    state.infoWindow.setPosition(position);
+    state.infoWindow.open({ map: state.map });
+  });
+}
+
+function adSpacePoint(adSpace: AdSpace): MapPoint | null {
+  const latitude = Number(adSpace.latitude);
+  const longitude = Number(adSpace.longitude);
+
+  if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) {
+    return null;
+  }
+
+  return {
+    type: 'point',
+    id: adSpace.id,
+    code: adSpace.code,
+    title: adSpace.title,
+    mediaType: adSpace.mediaType,
+    latitude,
+    longitude,
+    imageUrl: adSpace.imageUrl,
+    locationLabel: adSpace.locationLabel,
+    sizeLabel: adSpace.sizeLabel,
+  };
 }
 
 async function fetchCachedMapPayload(url: string, signal?: AbortSignal): Promise<MapPayload> {
@@ -798,142 +1151,6 @@ function isMapCluster(item: MapItem): item is MapCluster {
 
 function isMapPoint(item: MapItem): item is MapPoint {
   return item.type !== 'cluster';
-}
-
-function renderResultCards(container: HTMLElement, items: MapItem[], meta?: MapPayload['meta']): void {
-  const head = mustGet<HTMLElement>('.bb-map-results-head p', container);
-  const list = mustGet<HTMLElement>('.bb-map-results-list', container);
-  const clusters = items.filter(isMapCluster);
-  const points = items.filter(isMapPoint);
-  const cards = buildResultCards(points);
-
-  state.cardGroups.clear();
-  state.cardClusters.clear();
-
-  if (items.length === 0) {
-    head.textContent = strings.empty;
-    list.innerHTML = '';
-    return;
-  }
-
-  if (clusters.length > 0) {
-    head.textContent = `${meta?.total ?? points.length} ${strings.spaces}. ${clusters.length} ${strings.areas}`;
-    list.innerHTML = clusters.slice(0, 80).map((cluster) => {
-      state.cardClusters.set(cluster.id, cluster);
-
-      return `
-        <article class="bb-map-result-card bb-map-result-group">
-          <div>
-            <strong>${cluster.count} ${strings.spaces}</strong>
-            <span>${escapeHtml(cluster.locationLabel || strings.selection)}</span>
-          </div>
-          <button type="button" data-card-action="focus-cluster" data-card-id="${escapeAttribute(cluster.id)}">
-            ${strings.zoomGroup}
-          </button>
-        </article>
-      `;
-    }).join('');
-    return;
-  }
-
-  const grouped = cards.some((card) => card.kind === 'group');
-  head.textContent = grouped ? `${points.length} ${strings.spaces}. ${strings.groupedHint}` : `${points.length} ${strings.spaces}`;
-
-  list.innerHTML = cards.map((card) => {
-    if (card.kind === 'group') {
-      state.cardGroups.set(card.id, card.points);
-
-      return `
-        <article class="bb-map-result-card bb-map-result-group">
-          <div>
-            <strong>${card.points.length} ${strings.spaces}</strong>
-            <span>${escapeHtml(card.label)}</span>
-          </div>
-          <button type="button" data-card-action="focus-group" data-card-id="${escapeAttribute(card.id)}">
-            ${strings.zoomGroup}
-          </button>
-        </article>
-      `;
-    }
-
-    return `
-      <article class="bb-map-result-card">
-        ${card.point.imageUrl ? `<img src="${escapeAttribute(card.point.imageUrl)}" alt="${escapeAttribute(card.point.title)}" loading="lazy" />` : ''}
-        <div class="bb-map-result-body">
-          <strong>${escapeHtml(card.point.title)}</strong>
-          <span>${escapeHtml(card.point.locationLabel)}</span>
-          ${card.point.sizeLabel ? `<small>${escapeHtml(card.point.sizeLabel)}</small>` : ''}
-          <button type="button" data-card-action="focus-point" data-card-id="${escapeAttribute(card.point.id)}">
-            ${strings.showOnMap}
-          </button>
-        </div>
-      </article>
-    `;
-  }).join('');
-}
-
-function buildResultCards(points: MapPoint[]): Array<{ kind: 'point'; point: MapPoint } | { kind: 'group'; id: string; label: string; points: MapPoint[] }> {
-  const zoom = state.map?.getZoom() ?? 12;
-
-  if (points.length <= 80 && zoom >= 13) {
-    return points
-      .slice()
-      .sort((a, b) => a.code.localeCompare(b.code, 'sk', { numeric: true }))
-      .map((point) => ({ kind: 'point', point }));
-  }
-
-  const cellSize = zoom < 8 ? 0.75 : zoom < 10 ? 0.25 : zoom < 12 ? 0.08 : 0.025;
-  const groups = new Map<string, MapPoint[]>();
-
-  for (const point of points) {
-    const latKey = Math.floor(point.latitude / cellSize);
-    const lngKey = Math.floor(point.longitude / cellSize);
-    const key = `${latKey}:${lngKey}`;
-    const group = groups.get(key) ?? [];
-    group.push(point);
-    groups.set(key, group);
-  }
-
-  return Array.from(groups.entries())
-    .map(([id, group]) => ({
-      kind: 'group' as const,
-      id,
-      label: groupLabel(group),
-      points: group,
-    }))
-    .sort((a, b) => b.points.length - a.points.length)
-    .slice(0, 60);
-}
-
-function groupLabel(points: MapPoint[]): string {
-  const labels = new Map<string, number>();
-
-  for (const point of points) {
-    const label = point.locationLabel.split(',').slice(-1)[0]?.trim() || point.locationLabel;
-    labels.set(label, (labels.get(label) ?? 0) + 1);
-  }
-
-  return Array.from(labels.entries()).sort((a, b) => b[1] - a[1])[0]?.[0] ?? strings.selection;
-}
-
-function fitToPoints(points: MapPoint[], padding: number): void {
-  if (!state.map || points.length === 0) {
-    return;
-  }
-
-  if (points.length === 1) {
-    state.map.panTo({ lat: points[0].latitude, lng: points[0].longitude });
-    state.map.setZoom(Math.max(state.map.getZoom() ?? 14, 15));
-    return;
-  }
-
-  const bounds = new google.maps.LatLngBounds();
-
-  for (const point of points) {
-    bounds.extend({ lat: point.latitude, lng: point.longitude });
-  }
-
-  state.map.fitBounds(bounds, padding);
 }
 
 function focusCluster(cluster: MapCluster): void {
@@ -1261,6 +1478,14 @@ function isGoogleMapsReady(): boolean {
 function setStatus(node: HTMLElement, message: string, mode: 'loading' | 'ready' | 'empty' | 'error'): void {
   node.textContent = message;
   node.dataset.state = mode;
+
+  if (mode !== 'ready') {
+    const summary = node.closest('#billboardy-map-app')?.querySelector<HTMLElement>('[data-map-summary]');
+
+    if (summary) {
+      summary.textContent = message;
+    }
+  }
 }
 
 function mustGet<T extends Element>(selector: string, scope: ParentNode = document): T {

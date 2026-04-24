@@ -1,0 +1,146 @@
+---
+import { Icon } from 'astro-icon/components'
+
+const plochy = ['Billboardy', 'LED obrazovky', 'Citylighty', 'MHD & metro', 'Fasádne bannery', 'Špeciálne formáty']
+const mesta  = ['Bratislava', 'Košice', 'Žilina', 'Banská Bystrica', 'Prešov', 'Nitra']
+
+const social = [
+	{ icon: 'lucide:facebook',  href: '#', label: 'Facebook'  },
+	{ icon: 'lucide:instagram', href: '#', label: 'Instagram' },
+	{ icon: 'lucide:linkedin',  href: '#', label: 'LinkedIn'  },
+]
+---
+
+<footer id="kontakt" class="bg-bb-ink text-gray-300">
+
+	<!-- main grid -->
+	<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-14">
+		<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-10">
+
+			<!-- brand -->
+			<div class="lg:col-span-1">
+				<a href="/" class="text-white text-xl font-bold tracking-tight block mb-4">Billboardy.sk</a>
+				<p class="text-gray-400 text-sm leading-relaxed mb-4">
+					Prémiové reklamné plochy na Slovensku. Transparentné ceny, okamžité rezervovanie, profesionálna inštalácia.
+				</p>
+				<div class="flex gap-3">
+					{social.map(s => (
+						<a
+							href={s.href}
+							aria-label={s.label}
+							class="social-btn w-9 h-9 rounded-lg flex items-center justify-center transition-colors duration-200"
+						>
+							<Icon name={s.icon} width="16" height="16" />
+						</a>
+					))}
+				</div>
+			</div>
+
+			<!-- plochy -->
+			<div>
+				<h4 class="text-white font-bold text-[15px] mb-4">Plochy</h4>
+				<ul class="flex flex-col gap-2.5">
+					{plochy.map(item => (
+						<li>
+							<a href="#plochy" class="text-gray-400 hover:text-white text-sm transition-colors duration-200">{item}</a>
+						</li>
+					))}
+				</ul>
+			</div>
+
+			<!-- mesta -->
+			<div>
+				<h4 class="text-white font-bold text-[15px] mb-4">Mestá</h4>
+				<ul class="flex flex-col gap-2.5">
+					{mesta.map(item => (
+						<li>
+							<a href="#mapa" class="text-gray-400 hover:text-white text-sm transition-colors duration-200">{item}</a>
+						</li>
+					))}
+				</ul>
+			</div>
+
+			<!-- kontakt -->
+			<div>
+				<h4 class="text-white font-bold text-[15px] mb-4">Kontakt</h4>
+				<ul class="flex flex-col gap-3">
+					<li>
+						<a href="tel:+421900000000" class="flex items-center gap-2.5 text-gray-400 hover:text-white text-sm transition-colors duration-200">
+							<span class="contact-icon w-8 h-8 rounded-lg flex items-center justify-center shrink-0">
+								<Icon name="lucide:phone" width="14" height="14" />
+							</span>
+							+421 900 000 000
+						</a>
+					</li>
+					<li>
+						<a href="mailto:info@billboardy.sk" class="flex items-center gap-2.5 text-gray-400 hover:text-white text-sm transition-colors duration-200">
+							<span class="contact-icon w-8 h-8 rounded-lg flex items-center justify-center shrink-0">
+								<Icon name="lucide:mail" width="14" height="14" />
+							</span>
+							info@billboardy.sk
+						</a>
+					</li>
+					<li>
+						<div class="flex items-start gap-2.5 text-gray-400 text-sm">
+							<span class="contact-icon w-8 h-8 rounded-lg flex items-center justify-center shrink-0 mt-0.5">
+								<Icon name="lucide:map-pin" width="14" height="14" />
+							</span>
+							Bajkalská 22, 821 09 Bratislava
+						</div>
+					</li>
+				</ul>
+
+				<!-- rychly dopyt -->
+				<div class="mt-6">
+					<p class="text-gray-400 text-xs font-semibold mb-2">Rýchly dopyt</p>
+					<form class="flex gap-2" action="#" method="post">
+						<input
+							type="email"
+							name="email"
+							placeholder="váš@email.sk"
+							required
+							class="flex-1 border rounded-lg px-3 py-2 text-sm text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-white/20 transition-colors dopyt-input"
+						/>
+						<button
+							type="submit"
+							class="text-white px-3 py-2 rounded-lg text-sm font-semibold shrink-0 hover:opacity-90 transition-opacity duration-200"
+							style="background:#D80B17"
+						>
+							→
+						</button>
+					</form>
+				</div>
+			</div>
+
+		</div>
+	</div>
+
+	<!-- bottom bar -->
+	<div class="border-t border-white/10">
+		<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-gray-500">
+			<span>© 2026 Billboardy.sk. Všetky práva vyhradené.</span>
+			<div class="flex gap-4">
+				<a href="#" class="hover:text-gray-300 transition-colors duration-200">Ochrana osobných údajov</a>
+				<a href="#" class="hover:text-gray-300 transition-colors duration-200">Obchodné podmienky</a>
+				<a href="#" class="hover:text-gray-300 transition-colors duration-200">Cookies</a>
+			</div>
+		</div>
+	</div>
+
+</footer>
+
+<style>
+	.social-btn {
+		background: rgba(255, 255, 255, 0.08);
+	}
+	.social-btn:hover {
+		background: #D80B17;
+	}
+	.contact-icon {
+		background: rgba(255, 255, 255, 0.08);
+	}
+	.dopyt-input {
+		background: rgba(255, 255, 255, 0.06);
+		border-color: rgba(255, 255, 255, 0.1);
+	}
+</style>

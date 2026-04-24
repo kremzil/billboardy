@@ -1,0 +1,105 @@
+---
+import { Icon } from 'astro-icon/components'
+
+const links = [
+	{label: 'ceny', href: '#ceny'},
+	{label: 'mapa', href: '#mapa'},
+	{label: 'ako to funguje?', href: '#ako-to-funguje'},
+	{label: 'kontakt', href: '/kontakt'},
+]
+---
+ 
+ <header class="fixed top-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-md border-b border-gray-100 shadow-sm">
+		<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+			<div class="flex items-center justify-between h-16">
+				<div class="flex items-center">
+					<a href="/" class="text-xl font-bold text-gray-800">Billboardy.sk</a>
+
+				</div>
+
+				<nav class="hidden md:flex items-center gap-8">
+					{links.map(link => (
+						<a href={link.href} class="text-gray-800 active:font-bold hover:text-brand transition-colors duration-200">{link.label}</a>
+					))}
+				</nav>
+				<div class="hidden md:flex items-center gap-3">
+					<a href="tel:+421905123456" class="flex items-center gap-1 text-gray-800 hover:text-brand transition-colors duration-200">
+						<Icon name="lucide:phone" width="15" height="15" />
+						+421 905 123 456
+					</a>
+					<a href="#kontakt" class="bg-brand text-white px-4 py-2 rounded-lg text-sm font-medium 
+												transition-colors duration-200 hover:opacity-85">
+												Prenajať plochu
+					</a>
+				</div>
+			
+<!-- mobile toggle -->
+
+				<button
+					type="button"
+					class="md:hidden p-2 rounded-lg text-gray-800"
+					data-menu-toggle
+					aria-expanded="false"
+					aria-label="Otvoriť menu"
+				>
+					<Icon name="lucide:menu" width="20" height="20" data-icon-menu />
+					<Icon name="lucide:x" width="20" height="20" class="hidden" data-icon-close />
+				</button>
+
+			</div>
+		</div>
+
+<!-- mobile menu -->
+		<div class="hidden md:hidden border-t border-gray-100 bg-white px-4 py-4 flex-col gap-1" data-mobile-menu>
+			{links.map(link => (
+				<a
+					href={link.href}
+					class="text-gray-700 py-2 text-sm font-medium hover:text-brand transition-colors duration-200"
+					data-menu-link
+				>{link.label}</a>
+			))}
+			<a
+				href="#kontakt"
+				class="bg-brand text-white px-4 py-2.5 rounded-lg text-sm font-semibold text-center mt-2 hover:opacity-90 transition-opacity duration-200"
+			>
+				Prenajať plochu
+			</a>
+		</div>
+	</header>
+
+<script>
+	const toggle = document.querySelector('[data-menu-toggle]');
+	const menuIcon = document.querySelector('[data-icon-menu]');
+	const closeIcon = document.querySelector('[data-icon-close]');
+	const mobileMenu = document.querySelector('[data-mobile-menu]');
+	const menuLinks = document.querySelectorAll('[data-menu-link]');
+
+	function closeMenu() {
+		toggle?.setAttribute('aria-expanded', 'false');
+		toggle?.setAttribute('aria-label', 'Otvoriť menu');
+		menuIcon?.classList.remove('hidden');
+		closeIcon?.classList.add('hidden');
+		mobileMenu?.classList.remove('flex');
+		mobileMenu?.classList.add('hidden');
+	}
+
+	toggle?.addEventListener('click', () => {
+		const isOpen = toggle.getAttribute('aria-expanded') === 'true';
+		const nextOpen = !isOpen;
+
+		toggle.setAttribute('aria-expanded', String(nextOpen));
+		toggle.setAttribute('aria-label', nextOpen ? 'Zavrieť menu' : 'Otvoriť menu');
+		menuIcon?.classList.toggle('hidden', nextOpen);
+		closeIcon?.classList.toggle('hidden', !nextOpen);
+		if (nextOpen) {
+			mobileMenu?.classList.remove('hidden');
+			mobileMenu?.classList.add('flex');
+		} else {
+			mobileMenu?.classList.remove('flex');
+			mobileMenu?.classList.add('hidden');
+		}
+	});
+
+	// zatvor menu po kliknutí na odkaz
+	menuLinks.forEach(link => link.addEventListener('click', closeMenu));
+</script>

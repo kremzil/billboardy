@@ -1,5 +1,6 @@
 // @ts-check
 import { defineConfig } from 'astro/config';
+import icon from 'astro-icon';
 
 import tailwindcss from '@tailwindcss/vite';
 
@@ -7,6 +8,7 @@ import tailwindcss from '@tailwindcss/vite';
 export default defineConfig({
   base: '/mapa/',
   output: 'static',
+  integrations: [icon()],
   vite: {
     plugins: [tailwindcss()],
     build: {

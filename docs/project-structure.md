@@ -44,6 +44,7 @@
 Ключевые файлы:
 
 - `src/pages/index.astro` — основная страница приложения
+- `src/components/MapSection.astro` — секция карты для главной страницы
 - `src/scripts/map.ts` — логика карты, запросы к API, маркеры, popup, фильтры
 - `src/styles/global.css` — стили интерфейса
 - `.env.example` — пример переменных окружения
@@ -60,7 +61,8 @@
 Искать по задачам:
 
 - изменить поведение карты: `src/scripts/map.ts`
-- изменить разметку страницы: `src/pages/index.astro`
+- изменить разметку секции карты: `src/components/MapSection.astro`
+- изменить состав главной страницы: `src/pages/index.astro`
 - изменить визуал и layout: `src/styles/global.css`
 - изменить env/config: `.env.example`, `astro.config.mjs`
 
