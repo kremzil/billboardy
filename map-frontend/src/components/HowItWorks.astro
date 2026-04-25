@@ -1,0 +1,111 @@
+---
+import { Icon } from 'astro-icon/components'
+
+const STEPS = [
+	{
+		icon: "lucide:search",
+		step: "01",
+		title: "Vyhľadajte plochu",
+		desc: "Použite filtry na nájdenie ideálnej reklamnej plochy podľa mesta, typu, veľkosti a ceny.",
+		iconClass: "text-bb-focus",
+		bgClass: "bg-[#e8f2fc]",
+	},
+	{
+		icon: "lucide:file-check",
+		step: "02",
+		title: "Skontrolujte detaily",
+		desc: "Pozrite si fotografie, lokáciu na mape, štatistiky návštevnosti a dostupné termíny.",
+		iconClass: "text-brand",
+		bgClass: "bg-[#fde8e9]",
+	},
+	{
+		icon: "lucide:credit-card",
+		step: "03",
+		title: "Rezervujte a zaplaťte",
+		desc: "Vyberte termín a plochu zaplatte online. Fakturácia okamžite, bez skrytých poplatkov.",
+		iconClass: "text-bb-green",
+		bgClass: "bg-[#e6f5ef]",
+	},
+	{
+		icon: "lucide:megaphone",
+		step: "04",
+		title: "Vaša reklama žiari",
+		desc: "Nahrajte grafiku, my sa postaráme o inštaláciu. Vaša kampaň beží v plánovanom termíne.",
+		iconClass: "text-bb-ink",
+		bgClass: "bg-[#fdf6e3]",
+	},
+]
+---
+
+<section id="ako" class="py-20 bg-gray-50">
+	<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+
+		<!-- Hlavička -->
+		<div class="text-center mb-14">
+			<p class="text-sm mb-2 font-bold uppercase tracking-[0.08em] text-brand">
+				Jednoduchý proces
+			</p>
+			<h2 class="text-bb-ink mb-3 text-[2rem] font-extrabold">Ako to funguje?</h2>
+			<p class="text-gray-500 max-w-xl mx-auto text-sm">
+				Od výberu plochy po spustenie kampane – celý proces zvládnete online za pár minút.
+			</p>
+		</div>
+
+		<!-- Kroky -->
+		<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+			{STEPS.map((step, index) => (
+				<div class="relative">
+					{index < STEPS.length - 1 && (
+						<div class="connector hidden lg:block absolute top-10 h-px bg-gradient-to-r from-gray-200 to-gray-100 z-0" />
+					)}
+					<div class="bg-white rounded-2xl p-6 border border-gray-200 hover:shadow-lg transition-all duration-300 relative z-10">
+						<div class="flex items-center justify-between mb-4">
+							<div class={`w-14 h-14 rounded-2xl flex items-center justify-center ${step.bgClass}`}>
+								<Icon name={step.icon} width="26" height="26" class={step.iconClass} />
+							</div>
+							<span class="text-gray-200 text-[2rem] font-black">{step.step}</span>
+						</div>
+						<h3 class="text-gray-900 mb-2 text-base font-bold">{step.title}</h3>
+						<p class="text-gray-500 text-sm leading-relaxed">{step.desc}</p>
+					</div>
+				</div>
+			))}
+		</div>
+
+		<!-- CTA Banner -->
+		<div class="mt-14 rounded-3xl p-8 sm:p-12 text-center relative overflow-hidden bg-[linear-gradient(135deg,#151719_0%,#2a2f33_100%)]">
+			<div class="absolute inset-0 opacity-10 pointer-events-none">
+				<div class="absolute top-0 right-0 w-64 h-64 rounded-full -translate-y-32 translate-x-32 bg-brand" />
+				<div class="absolute bottom-0 left-0 w-48 h-48 rounded-full translate-y-24 -translate-x-24 bg-bb-yellow" />
+			</div>
+			<div class="relative z-10">
+				<h3 class="text-white mb-3 text-[1.6rem] font-extrabold">Pripravení začať kampaň?</h3>
+				<p class="mb-6 max-w-md mx-auto text-sm text-white/70">
+					Kontaktujte nás alebo si priamo vyberte plochu. Prvá konzultácia je zdarma.
+				</p>
+				<div class="flex flex-wrap justify-center gap-3">
+					<a
+						href="#plochy"
+						class="bg-white text-brand px-6 py-3 rounded-xl text-sm font-bold hover:opacity-90 transition-all"
+					>
+						Prezerať plochy
+					</a>
+					<a
+						href="#kontakt"
+						class="bg-brand text-white px-6 py-3 rounded-xl text-sm font-bold hover:opacity-90 transition-all"
+					>
+						Kontaktujte nás
+					</a>
+				</div>
+			</div>
+		</div>
+
+	</div>
+</section>
+
+<style>
+	.connector {
+		width: calc(100% - 80px);
+		left: 80px;
+	}
+</style>

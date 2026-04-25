@@ -44,7 +44,9 @@
 Ключевые файлы:
 
 - `src/pages/index.astro` — основная страница приложения
+- `src/pages/typ/[slug].astro` — страницы типов носителей с общей картой и фиксированным фильтром
 - `src/components/MapSection.astro` — секция карты для главной страницы
+- `src/data/adTypes.ts` — контент и slug-и страниц типов носителей
 - `src/scripts/map.ts` — логика карты, запросы к API, маркеры, popup, фильтры
 - `src/styles/global.css` — стили интерфейса
 - `.env.example` — пример переменных окружения

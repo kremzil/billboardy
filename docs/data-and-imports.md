@@ -48,6 +48,20 @@ CSV — рабочие производные файлы для импорта/�
 4. REST API читает уже нормализованные данные из таблицы;
 5. frontend работает только через API.
 
+## Нормализованные типы носителей
+
+Для runtime API используются стабильные значения `media_type`:
+
+- `billboard` — Billboard
+- `bigboard` — Bigboard
+- `citylight` — Citylight
+- `bridge` — Most
+- `banner` — Plachta
+- `facade` — Fasáda
+- `mega` — Mega plocha
+
+Словацкие названия остаются UI-labels. Старые alias-значения вроде `most`, `plachta`, `fasada` и `mega-plocha` должны читаться как совместимые входные значения, но новые импорты должны писать canonical значения из списка выше.
+
 ## Что важно помнить
 
 - Корневые CSV/XLSX/KMZ — это source/reference data, а не production API.

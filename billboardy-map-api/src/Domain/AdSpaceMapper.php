@@ -12,6 +12,10 @@ final class AdSpaceMapper
         'billboard' => 'Billboard',
         'bigboard' => 'Bigboard',
         'citylight' => 'Citylight',
+        'bridge' => 'Most',
+        'banner' => 'Plachta',
+        'facade' => 'Fasáda',
+        'mega' => 'Mega plocha',
     ];
 
     /**
@@ -87,7 +91,7 @@ final class AdSpaceMapper
             $imageUrl = $placeholderImageUrl;
         }
 
-        $mediaType = (string) ($source['mediaType'] ?? 'unknown');
+        $mediaType = $this->normalizeMediaType(trim((string) ($source['mediaType'] ?? '') . ' ' . (string) ($source['mediaTypeLabel'] ?? '')));
 
         return [
             'id' => (string) ($source['id'] ?? ''),
@@ -192,6 +196,22 @@ final class AdSpaceMapper
 
         if (strpos($value, 'citylight') !== false || strpos($value, 'city light') !== false || preg_match('/\bcl[a-z0-9_+-]*\b/', $value)) {
             return 'citylight';
+        }
+
+        if (strpos($value, 'mega') !== false) {
+            return 'mega';
+        }
+
+        if (strpos($value, 'facade') !== false || strpos($value, 'fasad') !== false || strpos($value, 'fasád') !== false) {
+            return 'facade';
+        }
+
+        if (strpos($value, 'plachta') !== false || strpos($value, 'banner') !== false || strpos($value, 'mesh') !== false) {
+            return 'banner';
+        }
+
+        if (strpos($value, 'bridge') !== false || preg_match('/\bmost\b/u', $value) || strpos($value, 'nadjazd') !== false || strpos($value, 'podjazd') !== false) {
+            return 'bridge';
         }
 
         return 'unknown';

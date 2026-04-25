@@ -1,8 +1,20 @@
 ---
 import { Icon } from 'astro-icon/components'
+import { AD_TYPE_SLUGS, SLUG_TO_TYPE } from '../data/adTypes'
 
-const plochy = ['Billboardy', 'LED obrazovky', 'Citylighty', 'MHD & metro', 'Fasádne bannery', 'Špeciálne formáty']
-const mesta  = ['Bratislava', 'Košice', 'Žilina', 'Banská Bystrica', 'Prešov', 'Nitra']
+const basePath = import.meta.env.BASE_URL;
+const plochy = AD_TYPE_SLUGS.map((slug) => ({ label: SLUG_TO_TYPE[slug], href: `${basePath}typ/${slug}/` }));
+const kraje = [
+	{ value: '', label: 'Celé Slovensko' },
+	{ value: 'bratislavsky', label: 'Bratislavský kraj' },
+	{ value: 'trnavsky', label: 'Trnavský kraj' },
+	{ value: 'trenciansky', label: 'Trenčiansky kraj' },
+	{ value: 'nitriansky', label: 'Nitriansky kraj' },
+	{ value: 'zilinsky', label: 'Žilinský kraj' },
+	{ value: 'banskobystricky', label: 'Banskobystrický kraj' },
+	{ value: 'presovsky', label: 'Prešovský kraj' },
+	{ value: 'kosicky', label: 'Košický kraj' },
+]
 
 const social = [
 	{ icon: 'lucide:facebook',  href: '#', label: 'Facebook'  },
@@ -19,7 +31,7 @@ const social = [
 
 			<!-- brand -->
 			<div class="lg:col-span-1">
-				<a href="/" class="text-white text-xl font-bold tracking-tight block mb-4">Billboardy.sk</a>
+				<a href={basePath} class="text-white text-xl font-bold tracking-tight block mb-4">Billboardy.sk</a>
 				<p class="text-gray-400 text-sm leading-relaxed mb-4">
 					Prémiové reklamné plochy na Slovensku. Transparentné ceny, okamžité rezervovanie, profesionálna inštalácia.
 				</p>
@@ -42,19 +54,25 @@ const social = [
 				<ul class="flex flex-col gap-2.5">
 					{plochy.map(item => (
 						<li>
-							<a href="#plochy" class="text-gray-400 hover:text-white text-sm transition-colors duration-200">{item}</a>
+							<a href={item.href} class="text-gray-400 hover:text-white text-sm transition-colors duration-200">{item.label}</a>
 						</li>
 					))}
 				</ul>
 			</div>
 
-			<!-- mesta -->
+			<!-- kraje -->
 			<div>
-				<h4 class="text-white font-bold text-[15px] mb-4">Mestá</h4>
+				<h4 class="text-white font-bold text-[15px] mb-4">Kraje</h4>
 				<ul class="flex flex-col gap-2.5">
-					{mesta.map(item => (
+					{kraje.map(item => (
 						<li>
-							<a href="#mapa" class="text-gray-400 hover:text-white text-sm transition-colors duration-200">{item}</a>
+							<a
+								href={item.value ? `${basePath}?region=${item.value}#mapa` : `${basePath}#mapa`}
+								class="text-gray-400 hover:text-white text-sm transition-colors duration-200"
+								data-footer-region={item.value}
+							>
+								{item.label}
+							</a>
 						</li>
 					))}
 				</ul>
@@ -128,6 +146,42 @@ const social = [
 	</div>
 
 </footer>
+
+<script>
+	const footerRegionLinks = document.querySelectorAll<HTMLAnchorElement>('[data-footer-region]');
+
+	for (const link of footerRegionLinks) {
+		link.addEventListener('click', (event) => {
+			const mapRoot = document.querySelector('#billboardy-map-app');
+
+			if (!mapRoot) {
+				return;
+			}
+
+			event.preventDefault();
+
+			const region = link.dataset.footerRegion ?? '';
+			const targetId = document.getElementById('mapa') ? 'mapa' : 'plochy';
+			const url = new URL(window.location.href);
+
+			if (region) {
+				url.searchParams.set('region', region);
+			} else {
+				url.searchParams.delete('region');
+			}
+
+			url.hash = targetId;
+			window.history.replaceState({}, '', url);
+			window.dispatchEvent(new CustomEvent('billboardy:hero-search', {
+				detail: { region },
+			}));
+			document.getElementById(targetId)?.scrollIntoView({
+				behavior: 'smooth',
+				block: 'start',
+			});
+		});
+	}
+</script>
 
 <style>
 	.social-btn {

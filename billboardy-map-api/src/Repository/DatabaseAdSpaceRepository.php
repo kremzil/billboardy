@@ -408,6 +408,22 @@ final class DatabaseAdSpaceRepository implements AdSpaceRepositoryInterface
             return 'citylight';
         }
 
+        if (strpos($value, 'mega') !== false) {
+            return 'mega';
+        }
+
+        if (strpos($value, 'facade') !== false || strpos($value, 'fasad') !== false || strpos($value, 'fasád') !== false) {
+            return 'facade';
+        }
+
+        if (strpos($value, 'plachta') !== false || strpos($value, 'banner') !== false || strpos($value, 'mesh') !== false) {
+            return 'banner';
+        }
+
+        if (strpos($value, 'bridge') !== false || preg_match('/\bmost\b/u', $value) || strpos($value, 'nadjazd') !== false || strpos($value, 'podjazd') !== false) {
+            return 'bridge';
+        }
+
         return $mediaType !== '' ? $mediaType : 'unknown';
     }
 
@@ -423,6 +439,22 @@ final class DatabaseAdSpaceRepository implements AdSpaceRepositoryInterface
 
         if ($mediaType === 'citylight') {
             return 'Citylight';
+        }
+
+        if ($mediaType === 'bridge') {
+            return 'Most';
+        }
+
+        if ($mediaType === 'banner') {
+            return 'Plachta';
+        }
+
+        if ($mediaType === 'facade') {
+            return 'Fasáda';
+        }
+
+        if ($mediaType === 'mega') {
+            return 'Mega plocha';
         }
 
         return $fallback !== '' ? $fallback : 'Neznáme';
@@ -455,6 +487,45 @@ final class DatabaseAdSpaceRepository implements AdSpaceRepositoryInterface
             $values[] = '%city%';
 
             return '(LOWER(media_type) = %s OR LOWER(media_type) LIKE %s OR LOWER(media_type_label) LIKE %s OR LOWER(media_type_label) LIKE %s)';
+        }
+
+        if ($mediaType === 'mega' || $mediaType === 'mega-plocha') {
+            $values[] = 'mega';
+            $values[] = 'mega-plocha';
+            $values[] = '%mega%';
+
+            return '(LOWER(media_type) = %s OR LOWER(media_type) = %s OR LOWER(media_type_label) LIKE %s)';
+        }
+
+        if ($mediaType === 'facade' || $mediaType === 'fasada') {
+            $values[] = 'facade';
+            $values[] = 'fasada';
+            $values[] = '%facade%';
+            $values[] = '%fasad%';
+            $values[] = '%fasád%';
+
+            return '(LOWER(media_type) = %s OR LOWER(media_type) = %s OR LOWER(media_type_label) LIKE %s OR LOWER(media_type_label) LIKE %s OR LOWER(media_type_label) LIKE %s)';
+        }
+
+        if ($mediaType === 'banner' || $mediaType === 'plachta') {
+            $values[] = 'banner';
+            $values[] = 'plachta';
+            $values[] = '%plachta%';
+            $values[] = '%banner%';
+            $values[] = '%mesh%';
+
+            return '(LOWER(media_type) = %s OR LOWER(media_type) = %s OR LOWER(media_type_label) LIKE %s OR LOWER(media_type_label) LIKE %s OR LOWER(media_type_label) LIKE %s)';
+        }
+
+        if ($mediaType === 'bridge' || $mediaType === 'most') {
+            $values[] = 'bridge';
+            $values[] = 'most';
+            $values[] = '%bridge%';
+            $values[] = '%most%';
+            $values[] = '%nadjazd%';
+            $values[] = '%podjazd%';
+
+            return '(LOWER(media_type) = %s OR LOWER(media_type) = %s OR LOWER(media_type_label) LIKE %s OR LOWER(media_type_label) LIKE %s OR LOWER(media_type_label) LIKE %s OR LOWER(media_type_label) LIKE %s)';
         }
 
         $values[] = $mediaType;

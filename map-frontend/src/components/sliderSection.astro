@@ -48,7 +48,7 @@ const skPlans: PricingPlan[] = [
 		popular: false,
 		image: BIGBOARD_IMG,
 		location: "D1 - Senec, vyjazd 45",
-		typeSlug: "billboard",
+		typeSlug: "bigboard",
 		features: ["Last minute od 599 EUR", "Tlac od 329 EUR", "Instalacia od 300 EUR"],
 	},
 	{
@@ -59,7 +59,7 @@ const skPlans: PricingPlan[] = [
 		popular: true,
 		image: CLV_IMG,
 		location: "Banska Bystrica - centrum",
-		typeSlug: "citylighty",
+		typeSlug: "citylight",
 		features: ["Last minute od 79 EUR", "Tlac od 14 EUR", "Instalacia v cene"],
 	},
 ];
@@ -84,7 +84,7 @@ const czPlans: PricingPlan[] = [
 		popular: false,
 		image: BIGBOARD_IMG,
 		location: "Praha - D1 dialnica",
-		typeSlug: "billboard",
+		typeSlug: "bigboard",
 		features: ["Last minute od 24 999 Kc", "Tlac od 1 499 Kc", "Instalacia v cene"],
 	},
 	{
@@ -95,7 +95,7 @@ const czPlans: PricingPlan[] = [
 		popular: true,
 		image: CLV_IMG,
 		location: "Brno - centrum",
-		typeSlug: "citylighty",
+		typeSlug: "citylight",
 		features: ["Last minute od 4 999 Kc", "Tlac od 399 Kc", "Instalacia v cene"],
 	},
 ];
@@ -118,6 +118,8 @@ const blocks: PricingBlock[] = [
 		disclaimer: "Cena tlace neobsahuje naklady na prepravu plagatu.",
 	},
 ];
+
+const basePath = import.meta.env.BASE_URL;
 ---
 
 <section id="ceny" class="py-20 bg-white">
@@ -126,7 +128,7 @@ const blocks: PricingBlock[] = [
 			blocks.map((block) => (
 				<div class="mb-16">
 					<div class="mb-8">
-						<p class="text-sm mb-2 font-bold uppercase tracking-[0.08em] text-brand">
+						<p class="text-sm mb-2 font-bold uppercase  text-brand">
 							Cennik
 						</p>
 						<h2 class="text-[2rem] font-extrabold text-bb-ink">{block.title}</h2>
@@ -192,9 +194,9 @@ const blocks: PricingBlock[] = [
 									<div class="px-5 pb-5 pt-2 border-t border-gray-100 flex flex-col gap-2">
 										<a
 											class="w-full py-2.5 rounded-xl text-white transition-all duration-200 hover:opacity-90 text-center font-bold text-[0.9rem] bg-brand"
-											href={`/typ/${plan.typeSlug}`}
+											href={`${basePath}typ/${plan.typeSlug}/`}
 										>
-											Viac informacii
+											Viac informácií
 										</a>
 
 										<p class="text-gray-400 text-center text-[0.68rem]">{block.disclaimer}</p>

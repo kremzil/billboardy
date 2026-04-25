@@ -522,6 +522,22 @@ final class AdSpaceImporter
             return 'citylight';
         }
 
+        if (strpos($value, 'mega') !== false) {
+            return 'mega';
+        }
+
+        if (strpos($value, 'facade') !== false || strpos($value, 'fasad') !== false || strpos($value, 'fasád') !== false) {
+            return 'facade';
+        }
+
+        if (strpos($value, 'plachta') !== false || strpos($value, 'banner') !== false || strpos($value, 'mesh') !== false) {
+            return 'banner';
+        }
+
+        if (strpos($value, 'bridge') !== false || preg_match('/\bmost\b/u', $value) || strpos($value, 'nadjazd') !== false || strpos($value, 'podjazd') !== false) {
+            return 'bridge';
+        }
+
         return 'unknown';
     }
 
@@ -537,6 +553,22 @@ final class AdSpaceImporter
 
         if ($mediaType === 'citylight') {
             return 'Citylight';
+        }
+
+        if ($mediaType === 'bridge') {
+            return 'Most';
+        }
+
+        if ($mediaType === 'banner') {
+            return 'Plachta';
+        }
+
+        if ($mediaType === 'facade') {
+            return 'Fasáda';
+        }
+
+        if ($mediaType === 'mega') {
+            return 'Mega plocha';
         }
 
         return 'Neznáme';

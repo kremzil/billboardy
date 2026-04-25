@@ -1,11 +1,17 @@
 ---
 import { Icon } from 'astro-icon/components'
+import { AD_TYPE_SLUGS, SLUG_TO_TYPE } from '../data/adTypes'
 
+const basePath = import.meta.env.BASE_URL;
+const areaLinks = AD_TYPE_SLUGS.map((slug) => ({
+	label: SLUG_TO_TYPE[slug],
+	href: `${basePath}typ/${slug}/`,
+}));
 const links = [
-	{label: 'ceny', href: '#ceny'},
-	{label: 'mapa', href: '#mapa'},
-	{label: 'ako to funguje?', href: '#ako-to-funguje'},
-	{label: 'kontakt', href: '/kontakt'},
+	{label: 'ceny', href: `${basePath}#ceny`},
+	{label: 'mapa', href: `${basePath}#mapa`},
+	{label: 'ako to funguje?', href: `${basePath}#ako`},
+	{label: 'kontakt', href: `${basePath}#kontakt`},
 ]
 ---
  
@@ -13,11 +19,28 @@ const links = [
 		<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
 			<div class="flex items-center justify-between h-16">
 				<div class="flex items-center">
-					<a href="/" class="text-xl font-bold text-gray-800">Billboardy.sk</a>
+					<a href={basePath} class="text-xl font-bold text-gray-800">Billboardy.sk</a>
 
 				</div>
 
 				<nav class="hidden md:flex items-center gap-8">
+					<div class="relative group">
+						<button
+							type="button"
+							class="flex items-center gap-1 text-gray-800 hover:text-brand transition-colors duration-200"
+							aria-haspopup="true"
+						>
+							reklamné plochy
+							<Icon name="lucide:chevron-down" width="14" height="14" />
+						</button>
+						<div class="invisible opacity-0 translate-y-1 group-hover:visible group-hover:opacity-100 group-hover:translate-y-0 group-focus-within:visible group-focus-within:opacity-100 group-focus-within:translate-y-0 absolute left-0 top-full mt-3 w-56 rounded-xl border border-gray-100 bg-white p-2 shadow-xl transition-all duration-150">
+							{areaLinks.map(link => (
+								<a href={link.href} class="block rounded-lg px-3 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50 hover:text-brand transition-colors duration-150">
+									{link.label}
+								</a>
+							))}
+						</div>
+					</div>
 					{links.map(link => (
 						<a href={link.href} class="text-gray-800 active:font-bold hover:text-brand transition-colors duration-200">{link.label}</a>
 					))}
@@ -27,7 +50,7 @@ const links = [
 						<Icon name="lucide:phone" width="15" height="15" />
 						+421 905 123 456
 					</a>
-					<a href="#kontakt" class="bg-brand text-white px-4 py-2 rounded-lg text-sm font-medium 
+					<a href={`${basePath}#kontakt`} class="bg-brand text-white px-4 py-2 rounded-lg text-sm font-medium 
 												transition-colors duration-200 hover:opacity-85">
 												Prenajať plochu
 					</a>
@@ -51,6 +74,16 @@ const links = [
 
 <!-- mobile menu -->
 		<div class="hidden md:hidden border-t border-gray-100 bg-white px-4 py-4 flex-col gap-1" data-mobile-menu>
+			<div class="border-b border-gray-100 pb-3 mb-2">
+				<p class="px-1 pb-1 text-xs font-bold uppercase tracking-wide text-gray-400">Reklamné plochy</p>
+				{areaLinks.map(link => (
+					<a
+						href={link.href}
+						class="block rounded-lg px-1 py-2 text-sm font-medium text-gray-700 hover:text-brand transition-colors duration-200"
+						data-menu-link
+					>{link.label}</a>
+				))}
+			</div>
 			{links.map(link => (
 				<a
 					href={link.href}
@@ -59,7 +92,7 @@ const links = [
 				>{link.label}</a>
 			))}
 			<a
-				href="#kontakt"
+				href={`${basePath}#kontakt`}
 				class="bg-brand text-white px-4 py-2.5 rounded-lg text-sm font-semibold text-center mt-2 hover:opacity-90 transition-opacity duration-200"
 			>
 				Prenajať plochu

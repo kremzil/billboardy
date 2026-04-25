@@ -3,8 +3,27 @@ import { Icon } from 'astro-icon/components'
 
 const HERO_BG = "https://images.unsplash.com/photo-1745941052300-33d18cadb27e?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxicmF0aXNsYXZhJTIwc2xvdmFraWElMjBjaXR5JTIwc2t5bGluZXxlbnwxfHx8fDE3NzY4NDc1NzZ8MA&ixlib=rb-4.1.0&q=80&w=1920";
 
-const CITY_OPTIONS = ['Bratislava', 'Košice', 'Žilina', 'Nitra', 'Banská Bystrica', 'Prešov']
-const TYPE_OPTIONS = ['Všetky typy', 'Billboard', 'LED obrazovka', 'Citylight', 'MHD']
+const REGION_OPTIONS = [
+  { value: '', label: 'Celé Slovensko' },
+  { value: 'bratislavsky', label: 'Bratislavský kraj' },
+  { value: 'trnavsky', label: 'Trnavský kraj' },
+  { value: 'trenciansky', label: 'Trenčiansky kraj' },
+  { value: 'nitriansky', label: 'Nitriansky kraj' },
+  { value: 'zilinsky', label: 'Žilinský kraj' },
+  { value: 'banskobystricky', label: 'Banskobystrický kraj' },
+  { value: 'presovsky', label: 'Prešovský kraj' },
+  { value: 'kosicky', label: 'Košický kraj' },
+]
+const TYPE_OPTIONS = [
+  { value: '', label: 'Všetky typy' },
+  { value: 'billboard', label: 'Billboard' },
+  { value: 'citylight', label: 'Citylight' },
+  { value: 'bigboard', label: 'Bigboard' },
+  { value: 'bridge', label: 'Most' },
+  { value: 'banner', label: 'Plachta' },
+  { value: 'facade', label: 'Fasáda' },
+  { value: 'mega', label: 'Mega plocha' },
+]
 const STATS = [
   { value: '1 200+', label: 'Reklamných plôch' },
   { value: '50+', label: 'Miest na Slovensku' },
@@ -32,20 +51,19 @@ const STATS = [
       <span class="text-bb-yellow">reklamnú plochu</span>
     </h1>
     <p class="text-gray-300 mb-10 max-w-2xl mx-auto text-[1.1rem]">
-      Viac ako 1 200 reklamných plôch po celom Slovensku. Billboardy, LED obrazovky, citylighty a ďalšie.
+      Viac ako 1 200 reklamných plôch po celom Slovensku. Billboard, Citylight, Bigboard, Plachta a ďalšie.
       Transparentná cena, okamžité rezervovanie.
     </p>
 
     <div class="bg-white rounded-2xl shadow-2xl p-2 max-w-3xl mx-auto">
-      <form class="flex flex-col sm:flex-row gap-0 divide-y sm:divide-y-0 sm:divide-x divide-gray-200" action="#mapa" method="get">
+      <form class="flex flex-col sm:flex-row gap-0 divide-y sm:divide-y-0 sm:divide-x divide-gray-200" action="#mapa" method="get" data-hero-map-search>
         <div class="flex-1 px-4 py-3 flex items-center gap-3">
           <Icon name="lucide:map-pin" width="18" height="18" class="shrink-0 text-brand" />
           <div class="flex-1 text-left">
-            <div class="text-xs text-gray-500 mb-0.5 font-semibold uppercase tracking-[0.05em]">Mesto</div>
-            <select name="mesto" class="w-full bg-transparent text-gray-800 text-sm outline-none cursor-pointer font-medium">
-              <option value="">Vyberte mesto...</option>
-              {CITY_OPTIONS.map(c => (
-                <option value={c}>{c}</option>
+            <div class="text-xs text-gray-500 mb-0.5 font-semibold uppercase tracking-[0.05em]">Kraj</div>
+            <select name="region" class="w-full bg-transparent text-gray-800 text-sm outline-none cursor-pointer font-medium">
+              {REGION_OPTIONS.map(region => (
+                <option value={region.value}>{region.label}</option>
               ))}
             </select>
           </div>
@@ -55,24 +73,16 @@ const STATS = [
           <Icon name="lucide:chevron-down" width="18" height="18" class="shrink-0 text-brand" />
           <div class="flex-1 text-left">
             <div class="text-xs text-gray-500 mb-0.5 font-semibold uppercase tracking-[0.05em]">Typ plochy</div>
-            <select name="typ" class="w-full bg-transparent text-gray-800 text-sm outline-none cursor-pointer font-medium">
-              {TYPE_OPTIONS.map(t => (
-                <option value={t}>{t}</option>
+            <select name="media_type" class="w-full bg-transparent text-gray-800 text-sm outline-none cursor-pointer font-medium">
+              {TYPE_OPTIONS.map(type => (
+                <option value={type.value}>{type.label}</option>
               ))}
             </select>
           </div>
         </div>
 
-        <div class="flex-1 px-4 py-3 flex items-center gap-3">
-          <Icon name="lucide:calendar" width="18" height="18" class="shrink-0 text-brand" />
-          <div class="flex-1 text-left">
-            <div class="text-xs text-gray-500 mb-0.5 font-semibold uppercase tracking-[0.05em]">Termín</div>
-            <input type="month" name="termin" class="w-full bg-transparent text-gray-800 text-sm outline-none font-medium" />
-          </div>
-        </div>
-
         <div class="px-2 py-2 flex items-center">
-          <button type="submit" class="bg-brand text-white px-6 py-3 rounded-xl flex items-center justify-center gap-2 transition-all duration-200 w-full sm:w-auto hover:opacity-90">
+          <button type="submit" class="btn">
             <Icon name="lucide:search" width="18" height="18" />
             <span class="font-semibold">Hľadať</span>
           </button>
@@ -95,3 +105,43 @@ const STATS = [
     <div class="w-px h-8 bg-linear-to-b from-white/40 to-transparent"></div>
   </div>
 </section>
+
+<script>
+  const heroSearchForm = document.querySelector<HTMLFormElement>('[data-hero-map-search]');
+
+  heroSearchForm?.addEventListener('submit', (event) => {
+    event.preventDefault();
+
+    const formData = new FormData(heroSearchForm);
+    const region = String(formData.get('region') ?? '').trim();
+    const mediaType = String(formData.get('media_type') ?? '').trim();
+    const url = new URL(window.location.href);
+
+    if (region) {
+      url.searchParams.set('region', region);
+    } else {
+      url.searchParams.delete('region');
+    }
+
+    if (mediaType) {
+      url.searchParams.set('media_type', mediaType);
+    } else {
+      url.searchParams.delete('media_type');
+    }
+
+    url.hash = 'mapa';
+    window.history.replaceState({}, '', url);
+
+    window.dispatchEvent(new CustomEvent('billboardy:hero-search', {
+      detail: {
+        region,
+        mediaType,
+      },
+    }));
+
+    document.getElementById('mapa')?.scrollIntoView({
+      behavior: 'smooth',
+      block: 'start',
+    });
+  });
+</script>

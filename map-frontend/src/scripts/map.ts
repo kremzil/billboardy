@@ -52,6 +52,11 @@ type MapBoundsPayload = {
   west: number;
 };
 
+type HeroMapSearchDetail = {
+  mediaType?: string;
+  region?: string;
+};
+
 type MapCluster = {
   type: 'cluster';
   id: string;
@@ -179,6 +184,17 @@ const config: MapConfig = {
   },
 };
 
+const regionBounds: Record<string, MapBoundsPayload> = {
+  bratislavsky: { north: 48.68, south: 47.72, east: 17.78, west: 16.78 },
+  trnavsky: { north: 48.96, south: 47.72, east: 18.22, west: 16.78 },
+  trenciansky: { north: 49.36, south: 48.42, east: 18.88, west: 17.32 },
+  nitriansky: { north: 48.8, south: 47.62, east: 19.08, west: 17.58 },
+  zilinsky: { north: 49.65, south: 48.78, east: 20.1, west: 18.32 },
+  banskobystricky: { north: 49.08, south: 47.7, east: 20.5, west: 18.18 },
+  presovsky: { north: 49.72, south: 48.55, east: 22.62, west: 19.72 },
+  kosicky: { north: 49.1, south: 47.7, east: 22.62, west: 20.05 },
+};
+
 const mapPayloadCache = new Map<string, MapPayload>();
 const maxMapPayloadCacheEntries = 40;
 const selectionPageSize = 10;
@@ -257,6 +273,7 @@ async function boot(container: HTMLElement): Promise<void> {
     state.infoWindow = new google.maps.InfoWindow({ maxWidth: 360 });
 
     bindControls(container);
+    applyMapSearch(container, mapSearchFromUrl());
     await waitForMapIdle();
     await refreshPoints(container, { includeBounds: true, fitToResults: false });
     bindMapViewport(container);
@@ -283,17 +300,6 @@ function renderShell(container: HTMLElement): void {
               <option value="">${strings.allTypes}</option>
             </select>
           </label>
-          <label>
-            <span>${strings.city}</span>
-            <select name="city" disabled>
-              <option value="">${strings.allCities}</option>
-            </select>
-          </label>
-          <label class="bb-map-search">
-            <span>${strings.search}</span>
-            <input name="search" type="search" autocomplete="off" placeholder="${strings.searchPlaceholder}" />
-          </label>
-          <button class="bb-map-reset" type="reset">${strings.reset}</button>
         </form>
       </div>
       <div class="bb-map-stage">
@@ -313,13 +319,28 @@ function renderShell(container: HTMLElement): void {
 
 function populateFilters(container: HTMLElement, filters: FiltersPayload): void {
   const mediaSelect = mustGet<HTMLSelectElement>('select[name="media_type"]', container);
-  const citySelect = mustGet<HTMLSelectElement>('select[name="city"]', container);
+  const citySelect = container.querySelector<HTMLSelectElement>('select[name="city"]');
+  const initialMediaType = container.dataset.initialMediaType ?? mediaSelect.value;
+  const initialMediaLabel = container.dataset.initialMediaLabel ?? initialMediaType;
+  const lockMediaType = container.dataset.lockMediaType === 'true';
 
   appendOptions(mediaSelect, filters.mediaTypes, strings.allTypes);
-  appendOptions(citySelect, filters.cities, strings.allCities);
-  renderMediaFilterPills(container, filters.mediaTypes);
-  mediaSelect.disabled = false;
-  citySelect.disabled = false;
+  if (citySelect) {
+    appendOptions(citySelect, filters.cities, strings.allCities);
+  }
+  ensureSelectOption(mediaSelect, initialMediaType, initialMediaLabel);
+  mediaSelect.value = initialMediaType;
+
+  if (lockMediaType) {
+    mediaSelect.disabled = false;
+  } else {
+    renderMediaFilterPills(container, filters.mediaTypes, initialMediaType);
+    mediaSelect.disabled = false;
+  }
+
+  if (citySelect) {
+    citySelect.disabled = false;
+  }
 }
 
 function appendOptions(select: HTMLSelectElement, options: FilterOption[], fallbackLabel: string): void {
@@ -333,7 +354,18 @@ function appendOptions(select: HTMLSelectElement, options: FilterOption[], fallb
   }
 }
 
-function renderMediaFilterPills(container: HTMLElement, options: FilterOption[]): void {
+function ensureSelectOption(select: HTMLSelectElement, value: string, label: string): void {
+  if (value === '' || Array.from(select.options).some((option) => option.value === value)) {
+    return;
+  }
+
+  const node = document.createElement('option');
+  node.value = value;
+  node.textContent = label;
+  select.append(node);
+}
+
+function renderMediaFilterPills(container: HTMLElement, options: FilterOption[], activeValue = ''): void {
   const pills = container.querySelector<HTMLElement>('[data-map-filter-pills]');
 
   if (!pills) {
@@ -341,9 +373,9 @@ function renderMediaFilterPills(container: HTMLElement, options: FilterOption[])
   }
 
   pills.innerHTML = [
-    `<button type="button" class="bb-map-filter-pill is-active" data-filter-value="" aria-pressed="true">${strings.allTypes.replace(' typy', '')}</button>`,
+    `<button type="button" class="bb-map-filter-pill ${activeValue === '' ? 'is-active' : ''}" data-filter-value="" aria-pressed="${activeValue === '' ? 'true' : 'false'}">${strings.allTypes.replace(' typy', '')}</button>`,
     ...options.map((option) => (
-      `<button type="button" class="bb-map-filter-pill" data-filter-value="${escapeAttribute(option.value)}" aria-pressed="false">${escapeHtml(option.label)}</button>`
+      `<button type="button" class="bb-map-filter-pill ${option.value === activeValue ? 'is-active' : ''}" data-filter-value="${escapeAttribute(option.value)}" aria-pressed="${option.value === activeValue ? 'true' : 'false'}">${escapeHtml(option.label)}</button>`
     )),
   ].join('');
 }
@@ -352,8 +384,6 @@ function bindControls(container: HTMLElement): void {
   const form = mustGet<HTMLFormElement>('.bb-map-filters', container);
   const results = mustGet<HTMLElement>('.bb-map-results-list', container);
   const mediaSelect = container.querySelector<HTMLSelectElement>('select[name="media_type"]');
-  const filterToggle = container.querySelector<HTMLButtonElement>('[data-filter-toggle]');
-  const advancedFilters = container.querySelector<HTMLElement>('#bb-map-advanced');
   let searchTimer = window.setTimeout(() => undefined, 0);
 
   form.addEventListener('change', () => {
@@ -393,16 +423,6 @@ function bindControls(container: HTMLElement): void {
     syncMediaFilterPills(container);
     state.selectionPage = 1;
     void refreshPoints(container, { includeBounds: true, fitToResults: false });
-  });
-
-  filterToggle?.addEventListener('click', () => {
-    if (!advancedFilters) {
-      return;
-    }
-
-    const nextExpanded = advancedFilters.hidden;
-    advancedFilters.hidden = !nextExpanded;
-    filterToggle.setAttribute('aria-expanded', String(nextExpanded));
   });
 
   results.addEventListener('click', (event) => {
@@ -461,6 +481,14 @@ function bindControls(container: HTMLElement): void {
       void openPoint(point, marker, true);
     }
   });
+
+  window.addEventListener('billboardy:hero-search', (event) => {
+    if (!(event instanceof CustomEvent)) {
+      return;
+    }
+
+    applyMapSearch(container, event.detail as HeroMapSearchDetail, true);
+  });
 }
 
 function syncMediaFilterPills(container: HTMLElement): void {
@@ -472,6 +500,132 @@ function syncMediaFilterPills(container: HTMLElement): void {
     pill.classList.toggle('is-active', isActive);
     pill.setAttribute('aria-pressed', String(isActive));
   }
+}
+
+function mapSearchFromUrl(): HeroMapSearchDetail {
+  const params = new URLSearchParams(window.location.search);
+
+  return {
+    mediaType: params.get('media_type') ?? params.get('typ') ?? '',
+    region: params.get('region') ?? '',
+  };
+}
+
+function applyMapSearch(container: HTMLElement, detail: HeroMapSearchDetail, triggerRefresh = false): void {
+  const hasMediaType = Object.prototype.hasOwnProperty.call(detail, 'mediaType');
+  const mediaType = hasMediaType ? normalizeHeroMediaType(detail.mediaType ?? '') : null;
+  const region = normalizeRegionKey(detail.region ?? '');
+
+  if (!triggerRefresh && (mediaType === null || mediaType === '') && region === '') {
+    return;
+  }
+
+  if (mediaType !== null) {
+    applyMediaTypeFilter(container, mediaType);
+  }
+
+  state.selectionPage = 1;
+
+  if (!state.map) {
+    return;
+  }
+
+  if (region !== '') {
+    if (triggerRefresh) {
+      google.maps.event.addListenerOnce(state.map, 'idle', () => {
+        void refreshPoints(container, { includeBounds: true, fitToResults: false });
+      });
+    }
+
+    fitMapToRegion(region);
+    return;
+  }
+
+  state.map.setCenter(config.defaultCenter);
+  state.map.setZoom(config.defaultZoom);
+
+  if (triggerRefresh) {
+    window.setTimeout(() => {
+      void refreshPoints(container, { includeBounds: true, fitToResults: false });
+    }, 0);
+  }
+}
+
+function applyMediaTypeFilter(container: HTMLElement, mediaType: string): void {
+  const mediaSelect = container.querySelector<HTMLSelectElement>('select[name="media_type"]');
+
+  if (!mediaSelect || container.dataset.lockMediaType === 'true') {
+    return;
+  }
+
+  ensureSelectOption(mediaSelect, mediaType, heroMediaTypeLabel(mediaType));
+  mediaSelect.value = mediaType;
+  container.dataset.initialMediaType = mediaType;
+  container.dataset.initialMediaLabel = heroMediaTypeLabel(mediaType);
+  syncMediaFilterPills(container);
+}
+
+function fitMapToRegion(region: string): void {
+  if (!state.map) {
+    return;
+  }
+
+  const bounds = regionBounds[region];
+
+  if (!bounds) {
+    return;
+  }
+
+  state.map.fitBounds(new google.maps.LatLngBounds(
+    { lat: bounds.south, lng: bounds.west },
+    { lat: bounds.north, lng: bounds.east },
+  ), 48);
+}
+
+function normalizeHeroMediaType(value: string): string {
+  const normalized = value.trim().toLowerCase();
+  const labelMap: Record<string, string> = {
+    billboard: 'billboard',
+    bigboard: 'bigboard',
+    citylight: 'citylight',
+    citylighty: 'citylight',
+    bridge: 'bridge',
+    most: 'bridge',
+    banner: 'banner',
+    plachta: 'banner',
+    facade: 'facade',
+    fasada: 'facade',
+    'fasáda': 'facade',
+    mega: 'mega',
+    'mega plocha': 'mega',
+    'mega-plocha': 'mega',
+    unknown: 'unknown',
+    'ostatné plochy': 'unknown',
+    'všetky typy': '',
+  };
+
+  return labelMap[normalized] ?? '';
+}
+
+function heroMediaTypeLabel(mediaType: string): string {
+  const labels: Record<string, string> = {
+    billboard: 'Billboard',
+    bigboard: 'Bigboard',
+    citylight: 'Citylight',
+    bridge: 'Most',
+    banner: 'Plachta',
+    facade: 'Fasáda',
+    mega: 'Mega plocha',
+    unknown: 'Ostatné plochy',
+  };
+
+  return labels[mediaType] ?? strings.allTypes;
+}
+
+function normalizeRegionKey(value: string): string {
+  const normalized = value.trim().toLowerCase();
+
+  return Object.prototype.hasOwnProperty.call(regionBounds, normalized) ? normalized : '';
 }
 
 function bindMapViewport(container: HTMLElement): void {
@@ -583,11 +737,34 @@ async function refreshPoints(
     return;
   }
 
-  const total = payload.meta?.total ?? state.points.length;
-  const returned = payload.meta?.returned ?? state.items.length;
+  const visibleStats = visibleMapStats(state.items);
+  const total = visibleStats.total;
+  const returned = visibleStats.returned;
   const modeLabel = payload.mode === 'clusters' ? strings.areas : strings.spaces;
-  updateMapSummary(container, `${total} ${strings.spaces} dostupných · Slovensko`);
+  updateMapSummary(container, `${total} ${strings.spaces} v aktuálnej oblasti`);
   setStatus(status, `${strings.count}: ${total}. ${returned} ${modeLabel}`, 'ready');
+}
+
+function visibleMapStats(items: MapItem[]): { total: number; returned: number } {
+  const bounds = state.map?.getBounds();
+
+  if (!bounds) {
+    return {
+      total: items.reduce((sum, item) => sum + (isMapCluster(item) ? item.count : 1), 0),
+      returned: items.length,
+    };
+  }
+
+  return items.reduce((stats, item) => {
+    if (!bounds.contains({ lat: item.latitude, lng: item.longitude })) {
+      return stats;
+    }
+
+    stats.total += isMapCluster(item) ? item.count : 1;
+    stats.returned++;
+
+    return stats;
+  }, { total: 0, returned: 0 });
 }
 
 function updateMapSummary(container: HTMLElement, message: string): void {
@@ -1359,6 +1536,22 @@ function normalizeMarkerMediaType(mediaType: string): string {
     return 'bigboard';
   }
 
+  if (value.includes('mega')) {
+    return 'mega';
+  }
+
+  if (value.includes('facade') || value.includes('fasad') || value.includes('fasád')) {
+    return 'facade';
+  }
+
+  if (value.includes('plachta') || value.includes('banner') || value.includes('mesh')) {
+    return 'banner';
+  }
+
+  if (value.includes('bridge') || /\bmost\b/u.test(value) || value.includes('nadjazd') || value.includes('podjazd')) {
+    return 'bridge';
+  }
+
   if (value === 'mixed') {
     return 'mixed';
   }
@@ -1387,6 +1580,10 @@ function markerColor(mediaType: string): string {
     billboard: '#0f8b5f',
     citylight: '#d03f2f',
     bigboard: '#2563eb',
+    bridge: '#334155',
+    banner: '#b45309',
+    facade: '#151719',
+    mega: '#7f1d1d',
     mixed: '#3f3f46',
     unknown: '#71717a',
   };

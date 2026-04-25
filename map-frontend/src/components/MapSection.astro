@@ -1,64 +1,82 @@
 ---
-import { Icon } from "astro-icon/components";
+interface Props {
+	id?: string;
+	title?: string;
+	summary?: string;
+	initialMediaType?: string;
+	filterLabel?: string;
+	lockMediaType?: boolean;
+}
+
+const {
+	id = "mapa",
+	title = "Reklamné plochy na mape",
+	summary = "Načítavam reklamné plochy...",
+	initialMediaType = "",
+	filterLabel = "",
+	lockMediaType = false,
+} = Astro.props;
 
 const initialFilters = [
 	{ label: "Všetky", value: "" },
 	{ label: "Billboard", value: "billboard" },
-	{ label: "Bigboard", value: "bigboard" },
 	{ label: "Citylight", value: "citylight" },
+	{ label: "Bigboard", value: "bigboard" },
+	{ label: "Most", value: "bridge" },
+	{ label: "Plachta", value: "banner" },
+	{ label: "Fasáda", value: "facade" },
+	{ label: "Mega plocha", value: "mega" },
 ];
+
+const selectedFilter = initialFilters.find((filter) => filter.value === initialMediaType);
+const lockedFilterLabel = filterLabel || selectedFilter?.label || "Vybraný typ";
 ---
 
-<section id="mapa" class="bb-map-section" aria-labelledby="bb-map-title">
-	<div id="billboardy-map-app" class="bb-map-app">
+<section id={id} class="bb-map-section" aria-labelledby="bb-map-title">
+	<div
+	id="billboardy-map-app"
+	class="bb-map-app"
+	data-initial-media-type={initialMediaType}
+	data-initial-media-label={lockedFilterLabel}
+	data-lock-media-type={lockMediaType ? "true" : "false"}
+>
 		<div class="bb-map-container">
 			<header class="bb-map-header">
 				<div>
-					<h2 id="bb-map-title">Reklamné plochy na mape</h2>
-					<p class="bb-map-summary" data-map-summary>Načítavam reklamné plochy...</p>
+					<h2 id="bb-map-title">{title}</h2>
+					<p class="bb-map-summary" data-map-summary>{summary}</p>
 				</div>
-
-				<button class="bb-map-filter-toggle" type="button" data-filter-toggle aria-controls="bb-map-advanced" aria-expanded="false">
-					<Icon name="lucide:sliders-horizontal" width="16" height="16" />
-					<span>Filtre</span>
-				</button>
 			</header>
 
 			<form class="bb-map-filters" aria-label="Filtre reklamných plôch">
 				<select class="bb-map-native-media-select" name="media_type" aria-label="Typ plochy" hidden>
 					{initialFilters.map((filter, index) => (
-						<option value={filter.value}>{index === 0 ? "Všetky typy" : filter.label}</option>
+						<option value={filter.value} selected={filter.value === initialMediaType}>
+							{index === 0 ? "Všetky typy" : filter.label}
+						</option>
 					))}
 				</select>
 
-				<div class="bb-map-filter-pills" data-map-filter-pills aria-label="Typ plochy">
-					{initialFilters.map((filter, index) => (
-						<button
-							type="button"
-							class:list={["bb-map-filter-pill", index === 0 && "is-active"]}
-							data-filter-value={filter.value}
-							aria-pressed={index === 0 ? "true" : "false"}
-						>
-							{filter.label}
-						</button>
-					))}
-				</div>
-
-				<div id="bb-map-advanced" class="bb-map-advanced" hidden>
-					<label>
-						<span>Mesto</span>
-						<select name="city" disabled>
-							<option value="">Všetky mestá</option>
-						</select>
-					</label>
-
-					<label class="bb-map-search">
-						<span>Vyhľadávanie</span>
-						<input name="search" type="search" autocomplete="off" placeholder="Kód alebo lokalita" />
-					</label>
-
-					<button class="bb-map-reset" type="reset">Zrušiť filtre</button>
-				</div>
+				{
+					lockMediaType ? (
+						<div class="bb-map-filter-lock">
+							<span>Filter: {lockedFilterLabel}</span>
+						</div>
+					) : (
+						<div class="bb-map-filter-pills" data-map-filter-pills aria-label="Typ plochy">
+							{initialFilters.map((filter) => (
+								<button
+									type="button"
+									class:list={["bb-map-filter-pill", filter.value === initialMediaType && "is-active"]}
+									data-filter-value={filter.value}
+									aria-pressed={filter.value === initialMediaType ? "true" : "false"}
+								>
+									{filter.label}
+								</button>
+							))}
+						</div>
+					)
+				}
 			</form>
 
 			<div class="bb-map-layout">
