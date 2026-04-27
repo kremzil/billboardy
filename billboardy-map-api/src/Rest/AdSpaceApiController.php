@@ -52,6 +52,12 @@ final class AdSpaceApiController
             'callback' => [$this, 'filters'],
             'permission_callback' => '__return_true',
         ]);
+
+        register_rest_route(self::NAMESPACE, '/inquiries', [
+            'methods' => \WP_REST_Server::CREATABLE,
+            'callback' => [$this, 'inquiry'],
+            'permission_callback' => '__return_true',
+        ]);
     }
 
     public function adSpaces(\WP_REST_Request $request): \WP_REST_Response
@@ -90,6 +96,85 @@ final class AdSpaceApiController
         ], 300);
     }
 
+    public function inquiry(\WP_REST_Request $request)
+    {
+        $payload = $request->get_json_params();
+
+        if (!is_array($payload)) {
+            $payload = $request->get_body_params();
+        }
+
+        if (!is_array($payload)) {
+            $payload = [];
+        }
+
+        if (trim((string) ($payload['website'] ?? '')) !== '') {
+            return $this->response(['data' => ['sent' => true]]);
+        }
+
+        $name = sanitize_text_field((string) ($payload['name'] ?? ''));
+        $email = sanitize_email((string) ($payload['email'] ?? ''));
+        $phone = sanitize_text_field((string) ($payload['phone'] ?? ''));
+        $company = sanitize_text_field((string) ($payload['company'] ?? ''));
+        $note = sanitize_textarea_field((string) ($payload['note'] ?? ''));
+        $source = sanitize_key((string) ($payload['source'] ?? 'map'));
+        $adType = sanitize_text_field((string) ($payload['adType'] ?? ''));
+        $region = sanitize_text_field((string) ($payload['region'] ?? ''));
+        $budget = sanitize_text_field((string) ($payload['budget'] ?? ''));
+        $startDate = sanitize_text_field((string) ($payload['startDate'] ?? ''));
+        $message = sanitize_textarea_field((string) ($payload['message'] ?? ''));
+        $items = $this->sanitizeInquiryItems($payload['items'] ?? []);
+
+        if (!in_array($source, ['map', 'contact', 'quick'], true)) {
+            $source = 'map';
+        }
+
+        $isMapInquiry = $source === 'map';
+
+        if (
+            $email === ''
+            || !is_email($email)
+            || ($source !== 'quick' && $name === '')
+            || ($isMapInquiry && ($phone === '' || $items === []))
+        ) {
+            return new \WP_Error(
+                'billboardy_invalid_inquiry',
+                __('Inquiry is missing required fields.', 'billboardy-map-api'),
+                ['status' => 400]
+            );
+        }
+
+        $recipient = sanitize_email((string) get_option('admin_email'));
+        $subject = $this->inquirySubject($source, count($items));
+        $body = $this->inquiryEmailBody($source, $name, $email, $phone, $company, $note, $items, [
+            'adType' => $adType,
+            'region' => $region,
+            'budget' => $budget,
+            'startDate' => $startDate,
+            'message' => $message,
+        ]);
+        $replyName = $name !== '' ? $name : 'Billboardy.sk dopyt';
+        $headers = [
+            'Content-Type: text/plain; charset=UTF-8',
+            'Reply-To: ' . $replyName . ' <' . $email . '>',
+        ];
+
+        if (!wp_mail($recipient, $subject, $body, $headers)) {
+            return new \WP_Error(
+                'billboardy_inquiry_not_sent',
+                __('Inquiry could not be sent.', 'billboardy-map-api'),
+                ['status' => 500]
+            );
+        }
+
+        return $this->response([
+            'data' => [
+                'sent' => true,
+                'count' => count($items),
+            ],
+        ]);
+    }
+
     private function response(array $payload, int $publicMaxAge = 0): \WP_REST_Response
     {
         $response = new \WP_REST_Response($payload);
@@ -118,6 +203,107 @@ final class AdSpaceApiController
         $origins = array_filter(array_map('trim', explode("\n", (string) SettingsPage::get()['allowed_frontend_origins'])));
 
         return in_array($requestOrigin, $origins, true) ? $requestOrigin : '';
+    }
+
+    /**
+     * @param mixed $items
+     * @return array<int, array<string, string>>
+     */
+    private function sanitizeInquiryItems($items): array
+    {
+        if (!is_array($items)) {
+            return [];
+        }
+
+        $sanitized = [];
+
+        foreach (array_slice($items, 0, 20) as $item) {
+            if (!is_array($item)) {
+                continue;
+            }
+
+            $id = sanitize_text_field((string) ($item['id'] ?? ''));
+            $title = sanitize_text_field((string) ($item['title'] ?? ''));
+
+            if ($id === '' || $title === '') {
+                continue;
+            }
+
+            $sanitized[] = [
+                'id' => $id,
+                'code' => sanitize_text_field((string) ($item['code'] ?? '')),
+                'title' => $title,
+                'mediaTypeLabel' => sanitize_text_field((string) ($item['mediaTypeLabel'] ?? '')),
+                'locationLabel' => sanitize_text_field((string) ($item['locationLabel'] ?? '')),
+                'sizeLabel' => sanitize_text_field((string) ($item['sizeLabel'] ?? '')),
+            ];
+        }
+
+        return $sanitized;
+    }
+
+    /**
+     * @param array<int, array<string, string>> $items
+     */
+    private function inquirySubject(string $source, int $itemCount): string
+    {
+        if ($source === 'quick') {
+            return '[Billboardy.sk] Rýchly dopyt z pätičky';
+        }
+
+        if ($source === 'contact') {
+            return '[Billboardy.sk] Nový kontaktný dopyt';
+        }
+
+        return sprintf('[Billboardy.sk] Nový dopyt na %d plôch', $itemCount);
+    }
+
+    /**
+     * @param array<int, array<string, string>> $items
+     * @param array<string, string> $details
+     */
+    private function inquiryEmailBody(string $source, string $name, string $email, string $phone, string $company, string $note, array $items, array $details): string
+    {
+        $lines = [
+            $source === 'quick' ? 'Rýchly dopyt' : 'Nový dopyt na cenovú ponuku',
+            '',
+            'Zdroj: ' . $source,
+            'Meno: ' . ($name !== '' ? $name : '-'),
+            'E-mail: ' . $email,
+            'Telefón: ' . ($phone !== '' ? $phone : '-'),
+            'Spoločnosť: ' . ($company !== '' ? $company : '-'),
+        ];
+
+        if ($source === 'contact') {
+            $lines[] = 'Typ nositeľa: ' . ($details['adType'] !== '' ? $details['adType'] : '-');
+            $lines[] = 'Kraj / oblasť: ' . ($details['region'] !== '' ? $details['region'] : '-');
+            $lines[] = 'Mesačný rozpočet: ' . ($details['budget'] !== '' ? $details['budget'] : '-');
+            $lines[] = 'Plánovaný začiatok: ' . ($details['startDate'] !== '' ? $details['startDate'] : '-');
+            $lines[] = 'Správa: ' . ($details['message'] !== '' ? $details['message'] : '-');
+        }
+
+        $lines[] = 'Poznámka: ' . ($note !== '' ? $note : '-');
+
+        if ($items === []) {
+            return implode("\n", $lines);
+        }
+
+        $lines[] = '';
+        $lines[] = 'Vybrané plochy:';
+
+        foreach ($items as $index => $item) {
+            $lines[] = sprintf(
+                '%d. %s%s',
+                $index + 1,
+                $item['title'],
+                $item['code'] !== '' ? ' (' . $item['code'] . ')' : ''
+            );
+            $lines[] = '   Typ: ' . ($item['mediaTypeLabel'] !== '' ? $item['mediaTypeLabel'] : '-');
+            $lines[] = '   Lokalita: ' . ($item['locationLabel'] !== '' ? $item['locationLabel'] : '-');
+            $lines[] = '   Rozmer: ' . ($item['sizeLabel'] !== '' ? $item['sizeLabel'] : '-');
+        }
+
+        return implode("\n", $lines);
     }
 
     /**

@@ -6,6 +6,7 @@ interface Props {
 	initialMediaType?: string;
 	filterLabel?: string;
 	lockMediaType?: boolean;
+	hideMediaFilters?: boolean;
 }
 
 const {
@@ -15,6 +16,7 @@ const {
 	initialMediaType = "",
 	filterLabel = "",
 	lockMediaType = false,
+	hideMediaFilters = false,
 } = Astro.props;
 
 const initialFilters = [
@@ -58,7 +60,7 @@ const lockedFilterLabel = filterLabel || selectedFilter?.label || "Vybraný typ"
 				</select>
 
 				{
-					lockMediaType ? (
+					hideMediaFilters ? null : lockMediaType ? (
 						<div class="bb-map-filter-lock">
 							<span>Filter: {lockedFilterLabel}</span>
 						</div>

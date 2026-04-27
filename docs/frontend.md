@@ -23,8 +23,11 @@ Frontend находится в `map-frontend/` и реализован как о
 ### Компоненты
 
 - `map-frontend/src/components/MapSection.astro`
+- `map-frontend/src/components/InquiryWidget.astro`
 
 Это Astro-shell секции карты для главной страницы и страниц типов носителей. В компоненте находится разметка заголовка, быстрых фильтров по типу, лениво отображаемого блока `Výber v aktuálnej oblasti` и контейнера Google Maps. Расширенная панель `Filtre` в секции карты не используется: выбор края приходит из hero/footer, а тип можно менять через быстрые кнопки. Компонент принимает стартовый `media_type` и может заблокировать выбор типа для страниц форматов. Клиентская логика остаётся в `src/scripts/map.ts`.
+
+`InquiryWidget.astro` — глобальный dopyt-виджет. Он показывает bubble под header после выбора плоскости на карте, хранит выбранные точки в `sessionStorage` и открывает modal с формой отправки.
 
 - `map-frontend/src/components/mainHero.astro`
 
@@ -43,6 +46,7 @@ Footer содержит ссылки на словацкие kraje вместо 
 ### Карта и клиентская логика
 
 - `map-frontend/src/scripts/map.ts`
+- `map-frontend/src/scripts/inquiry.ts`
 
 Это главный файл frontend-логики. В нём сосредоточены:
 
@@ -55,6 +59,9 @@ Footer содержит ссылки на словацкие kraje вместо 
 - diff-обновление маркеров;
 - отмена устаревших `/map-points` запросов при активном pan/zoom/search.
 - ленивую загрузку `Výber v aktuálnej oblasti` через `/ad-spaces` с `per_page=10`, текущими bounds и пагинацией только на близком зуме.
+- передачу точки из popup карты в dopyt-виджет через событие `billboardy:inquiry-add`.
+
+`inquiry.ts` управляет sessionStorage-выборкой точек, bubble-счётчиком, modal-формой и POST-запросом на `/inquiries`.
 
 ### Стили
 

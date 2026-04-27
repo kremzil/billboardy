@@ -38,10 +38,10 @@ const stats = [
 			</div>
 		</div>
 
-		<section class="relative min-h-[480px] overflow-hidden">
+		<section class="relative min-h-120 overflow-hidden">
 			<img src={content.heroImg} alt={content.title} class="absolute inset-0 h-full w-full object-cover" />
 			<div class="absolute inset-0 bg-[linear-gradient(to_right,rgba(21,23,25,0.88)_35%,rgba(21,23,25,0.28))]"></div>
-			<div class="relative mx-auto flex min-h-[480px] max-w-7xl items-center px-4 py-16 sm:px-6 lg:px-8">
+			<div class="relative mx-auto flex min-h-120 max-w-7xl items-center px-4 py-16 sm:px-6 lg:px-8">
 				<div class="max-w-2xl">
 					<span class="mb-4 inline-flex rounded-full px-3 py-1 text-xs font-extrabold text-white" style={`background:${content.accentColor}`}>
 						Typ nositeľa
@@ -197,6 +197,7 @@ const stats = [
 			initialMediaType={content.mapMediaType}
 			filterLabel={typeLabel}
 			lockMediaType
+			hideMediaFilters
 		/>
 
 		<section class="bg-bb-ink py-14">

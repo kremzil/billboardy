@@ -46,8 +46,10 @@
 - `src/pages/index.astro` — основная страница приложения
 - `src/pages/typ/[slug].astro` — страницы типов носителей с общей картой и фиксированным фильтром
 - `src/components/MapSection.astro` — секция карты для главной страницы
+- `src/components/InquiryWidget.astro` — глобальный dopyt-widget для выбранных на карте плоскостей
 - `src/data/adTypes.ts` — контент и slug-и страниц типов носителей
 - `src/scripts/map.ts` — логика карты, запросы к API, маркеры, popup, фильтры
+- `src/scripts/inquiry.ts` — sessionStorage, bubble, modal и отправка dopyt-запроса
 - `src/styles/global.css` — стили интерфейса
 - `.env.example` — пример переменных окружения
 - `astro.config.mjs` — конфигурация Astro

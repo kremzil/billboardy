@@ -11,7 +11,6 @@ declare global {
 type MapConfig = {
   apiBase: string;
   googleMapsApiKey: string;
-  contactUrl: string;
   placeholderImageUrl: string;
   googleMapsMapId: string;
   defaultCenter: google.maps.LatLngLiteral;
@@ -168,7 +167,6 @@ const strings = {
 const defaultConfig: MapConfig = {
   apiBase: import.meta.env.PUBLIC_BILLBOARDY_API_BASE ?? '/wp-json/billboardy/v1',
   googleMapsApiKey: import.meta.env.PUBLIC_GOOGLE_MAPS_API_KEY ?? '',
-  contactUrl: import.meta.env.PUBLIC_CONTACT_URL ?? '/kontaktujte-nas/',
   placeholderImageUrl: import.meta.env.PUBLIC_PLACEHOLDER_IMAGE_URL ?? '',
   googleMapsMapId: import.meta.env.PUBLIC_GOOGLE_MAPS_MAP_ID ?? 'DEMO_MAP_ID',
   defaultCenter: { lat: 48.669, lng: 19.699 },
@@ -466,19 +464,27 @@ function bindControls(container: HTMLElement): void {
   });
 
   document.addEventListener('click', (event) => {
-    const target = event.target instanceof Element ? event.target.closest<HTMLElement>('[data-popup-action="open-point"]') : null;
+    const element = event.target instanceof Element ? event.target : null;
+    const target = element?.closest<HTMLElement>('[data-popup-action="open-point"]') ?? null;
 
-    if (!target) {
+    if (target) {
+      event.preventDefault();
+      const id = target.dataset.pointId ?? '';
+      const point = state.points.find((item) => item.id === id);
+      const marker = state.markerById.get(id);
+
+      if (point && marker) {
+        void openPoint(point, marker, true);
+      }
+
       return;
     }
 
-    event.preventDefault();
-    const id = target.dataset.pointId ?? '';
-    const point = state.points.find((item) => item.id === id);
-    const marker = state.markerById.get(id);
+    const inquiryTarget = element?.closest<HTMLElement>('[data-popup-action="add-inquiry"]') ?? null;
 
-    if (point && marker) {
-      void openPoint(point, marker, true);
+    if (inquiryTarget) {
+      event.preventDefault();
+      dispatchInquiryAdd(inquiryTarget);
     }
   });
 
@@ -1431,7 +1437,6 @@ function popupLoading(point: MapPoint): string {
 
 function popupContent(adSpace: AdSpace): string {
   const image = adSpace.imageUrl || config.placeholderImageUrl;
-  const contactUrl = buildContactUrl(adSpace.code);
   const description = adSpace.descriptionHtml ? `<div class="bb-map-popup-description">${adSpace.descriptionHtml}</div>` : '';
 
   return `
@@ -1446,7 +1451,18 @@ function popupContent(adSpace: AdSpace): string {
           ${adSpace.sizeLabel ? `<div><dt>${strings.size}</dt><dd>${escapeHtml(adSpace.sizeLabel)}</dd></div>` : ''}
         </dl>
         ${description}
-        <a class="bb-map-popup-cta" href="${escapeAttribute(contactUrl)}">${strings.cta}</a>
+        <button
+          class="bb-map-popup-cta"
+          type="button"
+          data-popup-action="add-inquiry"
+          data-id="${escapeAttribute(adSpace.id)}"
+          data-code="${escapeAttribute(adSpace.code)}"
+          data-title="${escapeAttribute(adSpace.title)}"
+          data-media-type-label="${escapeAttribute(adSpace.mediaTypeLabel)}"
+          data-location-label="${escapeAttribute(adSpace.locationLabel)}"
+          data-size-label="${escapeAttribute(adSpace.sizeLabel)}"
+          data-image-url="${escapeAttribute(image)}"
+        >${strings.cta}</button>
       </div>
     </article>
   `;
@@ -1481,11 +1497,27 @@ function coordinateGroupPopup(group: CoordinateMarkerGroup): string {
   `;
 }
 
-function buildContactUrl(code: string): string {
-  const url = new URL(config.contactUrl, window.location.href);
-  url.searchParams.set('ad_space', code);
+function dispatchInquiryAdd(target: HTMLElement): void {
+  const id = target.dataset.id ?? '';
 
-  return url.toString();
+  if (id === '') {
+    return;
+  }
+
+  document.dispatchEvent(new CustomEvent('billboardy:inquiry-add', {
+    detail: {
+      id,
+      code: target.dataset.code ?? '',
+      title: target.dataset.title ?? '',
+      mediaTypeLabel: target.dataset.mediaTypeLabel ?? '',
+      locationLabel: target.dataset.locationLabel ?? '',
+      sizeLabel: target.dataset.sizeLabel ?? '',
+      imageUrl: target.dataset.imageUrl ?? '',
+    },
+  }));
+
+  target.textContent = 'Pridané do dopytu';
+  target.classList.add('is-added');
 }
 
 const markerClusterRenderer: Renderer = {

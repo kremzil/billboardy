@@ -1,0 +1,148 @@
+---
+import { Icon } from 'astro-icon/components';
+
+interface TeamMember {
+  name: string;
+  role: string;
+  email: string;
+  phone: string;
+  photo: string;
+  roleColor: string;
+}
+
+const TEAM: TeamMember[] = [
+  {
+    name: "Martin Kováč",
+    role: "CEO / Head of Sales",
+    email: "martin@reklamneplochy.sk",
+    phone: "+421 917 226 194",
+    photo: "https://images.unsplash.com/photo-1584940120505-117038d90b05?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxtYXR1cmUlMjBidXNpbmVzc21hbiUyMHNlbmlvciUyMHByb2Zlc3Npb25hbCUyMHBvcnRyYWl0fGVufDF8fHx8MTc3NzE5ODk2M3ww&ixlib=rb-4.1.0&q=80&w=600",
+    roleColor: "#D80B17",
+  },
+  {
+    name: "Jana Horáková",
+    role: "Key Account Manager",
+    email: "jana@reklamneplochy.sk",
+    phone: "+421 917 930 494",
+    photo: "https://images.unsplash.com/photo-1561882468-ff8353a25763?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHx3b21hbiUyMGV4ZWN1dGl2ZSUyMG1hcmtldGluZyUyMGRpcmVjdG9yJTIwcG9ydHJhaXR8ZW58MXx8fHwxNzc3MTk4OTU5fDA&ixlib=rb-4.1.0&q=80&w=600",
+    roleColor: "#106EBE",
+  },
+  {
+    name: "Peter Lukáč",
+    role: "Key Account Manager",
+    email: "peter@reklamneplochy.sk",
+    phone: "+421 917 226 195",
+    photo: "https://images.unsplash.com/photo-1568585105565-e372998a195d?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxwcm9mZXNzaW9uYWwlMjBidXNpbmVzcyUyMG1hbiUyMHBvcnRyYWl0JTIwaGVhZHNob3QlMjBvZmZpY2V8ZW58MXx8fHwxNzc3MTk4OTUzfDA&ixlib=rb-4.1.0&q=80&w=600",
+    roleColor: "#106EBE",
+  },
+  {
+    name: "Tomáš Blaho",
+    role: "Key Account Manager",
+    email: "tomas@reklamneplochy.sk",
+    phone: "+421 904 090 253",
+    photo: "https://images.unsplash.com/photo-1758518727984-17b37f2f0562?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHx5b3VuZyUyMG1hbiUyMHByb2Zlc3Npb25hbCUyMHN1aXQlMjBwb3J0cmFpdCUyMGNvbmZpZGVudHxlbnwxfHx8fDE3NzcxOTg5NTZ8MA&ixlib=rb-4.1.0&q=80&w=600",
+    roleColor: "#106EBE",
+  },
+  {
+    name: "Mária Sedláková",
+    role: "Front Office / Customer Service",
+    email: "maria@reklamneplochy.sk",
+    phone: "+421 917 545 003",
+    photo: "https://images.unsplash.com/photo-1762522921456-cdfe882d36c3?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHx5b3VuZyUyMHByb2Zlc3Npb25hbCUyMHdvbWFuJTIwc21pbGluZyUyMHBvcnRyYWl0fGVufDF8fHx8MTc3NzE5ODk1Nnww&ixlib=rb-4.1.0&q=80&w=600",
+    roleColor: "#D80B17",
+  },
+  {
+    name: "Rastislav Oravec",
+    role: "Production / Store Manager",
+    email: "rastislav@reklamneplochy.sk",
+    phone: "+421 905 918 714",
+    photo: "https://images.unsplash.com/photo-1584940120505-117038d90b05?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxtYXR1cmUlMjBidXNpbmVzc21hbiUyMHNlbmlvciUyMHByb2Zlc3Npb25hbCUyMHBvcnRyYWl0fGVufDF8fHx8MTc3NzE5ODk2M3ww&ixlib=rb-4.1.0&q=80&w=600",
+    roleColor: "#0F8B5F",
+  },
+  {
+    name: "Katarína Vargová",
+    role: "Production Manager",
+    email: "katarina@reklamneplochy.sk",
+    phone: "+421 918 900 244",
+    photo: "https://images.unsplash.com/photo-1689600944138-da3b150d9cb8?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxwcm9mZXNzaW9uYWwlMjBidXNpbmVzcyUyMHdvbWFuJTIwcG9ydHJhaXQlMjBoZWFkc2hvdHxlbnwxfHx8fDE3NzcxOTg5NTN8MA&ixlib=rb-4.1.0&q=80&w=600",
+    roleColor: "#0F8B5F",
+  },
+  {
+    name: "Zuzana Mikušová",
+    role: "Invoicing / Happiness Manager",
+    email: "zuzana@reklamneplochy.sk",
+    phone: "+421 915 575 696",
+    photo: "https://images.unsplash.com/photo-1762522921456-cdfe882d36c3?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHx5b3VuZyUyMHByb2Zlc3Npb25hbCUyMHdvbWFuJTIwc21pbGluZyUyMHBvcnRyYWl0fGVufDF8fHx8MTc3NzE5ODk1Nnww&ixlib=rb-4.1.0&q=80&w=600",
+    roleColor: "#106EBE",
+  },
+];
+---
+
+<section class="py-20 bg-white">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+
+    <!-- Header -->
+    <div class="mb-12">
+      <p class="text-xs mb-2" style="font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--color-brand);">
+        Tím
+      </p>
+      <div class="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
+        <h2 style="font-size:2rem;font-weight:900;color:var(--color-bb-ink);line-height:1.1;">
+          Náš tím
+        </h2>
+        <p class="text-gray-400 text-sm max-w-sm leading-relaxed">
+          Sme tím odborníkov s viac ako 10 rokmi skúseností v oblasti vonkajšej reklamy na Slovensku.
+        </p>
+      </div>
+    </div>
+
+    <!-- Grid -->
+    <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-6">
+      {TEAM.map((member) => (
+        <div class="bg-white rounded-2xl overflow-hidden shadow-sm border border-gray-100 hover:shadow-md transition-shadow duration-200">
+          <!-- Photo -->
+          <div class="w-full overflow-hidden" style="aspect-ratio:1/1;background:#e8e8e8;">
+            <img
+              src={member.photo}
+              alt={member.name}
+              class="w-full h-full object-cover object-top"
+              loading="lazy"
+            />
+          </div>
+
+          <!-- Info -->
+          <div class="px-4 pt-4 pb-5 flex flex-col gap-2">
+            <div style={`font-weight:800;color:var(--color-bb-ink);font-size:1rem;line-height:1.25;`}>
+              {member.name}
+            </div>
+            <div class="text-xs leading-snug" style={`font-weight:600;color:${member.roleColor};`}>
+              {member.role}
+            </div>
+
+            <div class="border-t border-gray-100 my-0.5"></div>
+
+            <a
+              href={`mailto:${member.email}`}
+              class="flex items-center gap-2 text-xs text-gray-500 hover:text-bb-focus transition-colors"
+              style="font-weight:500;"
+            >
+              <Icon name="lucide:mail" class="shrink-0 text-gray-400 size-3" />
+              <span class="truncate">{member.email}</span>
+            </a>
+
+            <a
+              href={`tel:${member.phone.replace(/\s/g, "")}`}
+              class="flex items-center gap-2 text-xs text-gray-500 hover:text-bb-focus transition-colors"
+              style="font-weight:500;"
+            >
+              <Icon name="lucide:phone" class="shrink-0 text-gray-400 size-3" />
+              <span>{member.phone}</span>
+            </a>
+          </div>
+        </div>
+      ))}
+    </div>
+
+
+  </div>
+</section>

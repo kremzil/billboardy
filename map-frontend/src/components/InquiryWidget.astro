@@ -1,0 +1,66 @@
+---
+import { Icon } from "astro-icon/components";
+
+const apiBase = import.meta.env.PUBLIC_BILLBOARDY_API_BASE ?? "/wp-json/billboardy/v1";
+---
+
+<div class="bb-inquiry-widget" data-inquiry-widget data-api-base={apiBase}>
+	<div class="bb-inquiry-bar" data-inquiry-bar hidden>
+		<button class="bb-inquiry-bubble" type="button" data-inquiry-open aria-haspopup="dialog">
+			<span data-inquiry-count>0</span>
+			<strong>Odoslať dopyt</strong>
+		</button>
+	</div>
+
+	<div class="bb-inquiry-modal" data-inquiry-modal hidden>
+		<div class="bb-inquiry-backdrop" data-inquiry-close></div>
+		<section class="bb-inquiry-dialog" role="dialog" aria-modal="true" aria-labelledby="bb-inquiry-title">
+			<header class="bb-inquiry-head">
+				<div>
+					<h2 id="bb-inquiry-title">Dopyt na cenovú ponuku</h2>
+					<p>Vyberte plochy a odošlite dopyt nášmu obchodnému tímu.</p>
+				</div>
+				<button type="button" class="bb-inquiry-close" data-inquiry-close aria-label="Zavrieť">
+					<Icon name="lucide:x" width="18" height="18" />
+				</button>
+			</header>
+
+			<div class="bb-inquiry-items" data-inquiry-items></div>
+
+			<form class="bb-inquiry-form" data-inquiry-form>
+				<input type="text" name="website" autocomplete="off" tabindex="-1" hidden />
+				<div class="bb-inquiry-grid">
+					<label>
+						<span>Meno a priezvisko</span>
+						<input name="name" type="text" autocomplete="name" required placeholder="Meno a priezvisko" />
+					</label>
+					<label>
+						<span>E-mail</span>
+						<input name="email" type="email" autocomplete="email" required placeholder="vas@email.sk" />
+					</label>
+					<label>
+						<span>Telefón</span>
+						<input name="phone" type="tel" autocomplete="tel" required placeholder="+421 900 123 456" />
+					</label>
+					<label>
+						<span>Spoločnosť</span>
+						<input name="company" type="text" autocomplete="organization" placeholder="Vaša spoločnosť" />
+					</label>
+				</div>
+				<label class="bb-inquiry-note">
+					<span>Poznámka (voliteľné)</span>
+					<textarea name="note" rows="3" placeholder="Termín dodania, špecifikácia projektu, požadovaný objem..."></textarea>
+				</label>
+				<p class="bb-inquiry-message" data-inquiry-message role="status" aria-live="polite"></p>
+				<button type="submit" class="bb-inquiry-submit">
+					<Icon name="lucide:send" width="18" height="18" />
+					Odoslať dopyt
+				</button>
+			</form>
+		</section>
+	</div>
+</div>
+
+<script>
+	import "../scripts/inquiry";
+</script>
