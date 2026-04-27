@@ -13,9 +13,31 @@ const links = [
 	{label: 'ako to funguje?', href: `${basePath}#ako`},
 	{label: 'kontakt', href: `${basePath}kontakt`},
 ]
+
+const stripBasePath = (path: string) => {
+	const normalizedBase = basePath.endsWith("/") ? basePath : `${basePath}/`;
+
+	if (normalizedBase !== "/" && path.startsWith(normalizedBase)) {
+		return `/${path.slice(normalizedBase.length)}`;
+	}
+
+	return path;
+};
+const normalizeComparablePath = (path: string) => {
+	const normalizedPath = stripBasePath(path);
+	return normalizedPath.endsWith("/") ? normalizedPath : `${normalizedPath}/`;
+};
+const currentPath = normalizeComparablePath(Astro.url.pathname);
+const normalizePath = (href: string) => {
+	const path = new URL(href, Astro.site ?? Astro.url).pathname;
+	return normalizeComparablePath(path);
+};
+const isTypePage = currentPath.startsWith("/typ/");
+const isHashLink = (href: string) => href.includes("#");
+const isActivePath = (href: string) => !isHashLink(href) && normalizePath(href) === currentPath;
 ---
  
- <header class="fixed top-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-md border-b border-gray-100 shadow-sm">
+ <header class="fixed top-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-md border-b border-gray-100 shadow-sm" data-nav-root data-base-path={basePath}>
 		<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
 			<div class="flex items-center justify-between h-16">
 				<div class="flex items-center">
@@ -27,7 +49,10 @@ const links = [
 					<div class="relative group">
 						<button
 							type="button"
-							class="flex items-center gap-1 text-gray-800 hover:text-brand transition-colors duration-200"
+							class:list={[
+								"flex items-center gap-1 text-gray-800 hover:text-brand transition-colors duration-200",
+								isTypePage && "font-bold text-brand",
+							]}
 							aria-haspopup="true"
 						>
 							reklamné plochy
@@ -35,20 +60,35 @@ const links = [
 						</button>
 						<div class="invisible opacity-0 translate-y-1 group-hover:visible group-hover:opacity-100 group-hover:translate-y-0 group-focus-within:visible group-focus-within:opacity-100 group-focus-within:translate-y-0 absolute left-0 top-full mt-3 w-56 rounded-xl border border-gray-100 bg-white p-2 shadow-xl transition-all duration-150">
 							{areaLinks.map(link => (
-								<a href={link.href} class="block rounded-lg px-3 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50 hover:text-brand transition-colors duration-150">
+								<a
+									href={link.href}
+									class:list={[
+										"block rounded-lg px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-brand transition-colors duration-150",
+										isActivePath(link.href) ? "font-bold text-brand" : "font-semibold",
+									]}
+									aria-current={isActivePath(link.href) ? "page" : undefined}
+								>
 									{link.label}
 								</a>
 							))}
 						</div>
 					</div>
 					{links.map(link => (
-						<a href={link.href} class="text-gray-800 active:font-bold hover:text-brand transition-colors duration-200">{link.label}</a>
+						<a
+							href={link.href}
+							class:list={[
+								"text-gray-800 hover:text-brand transition-colors duration-200",
+								isActivePath(link.href) ? "font-bold text-brand" : "font-normal",
+							]}
+							data-nav-link
+							aria-current={isActivePath(link.href) ? "page" : undefined}
+						>{link.label}</a>
 					))}
 				</nav>
 				<div class="hidden md:flex items-center gap-3">
-					<a href="tel:+421905123456" class="flex items-center gap-1 text-gray-800 hover:text-brand transition-colors duration-200">
+					<a href="tel:+421917545003" class="flex items-center gap-1 text-gray-800 hover:text-brand transition-colors duration-200">
 						<Icon name="lucide:phone" width="15" height="15" />
-						+421 905 123 456
+						+ 421 917 545 003
 					</a>
 					<a href={`${basePath}#kontakt`} class="bg-brand text-white px-4 py-2 rounded-lg text-sm font-medium 
 												transition-colors duration-200 hover:opacity-85">
@@ -79,7 +119,11 @@ const links = [
 				{areaLinks.map(link => (
 					<a
 						href={link.href}
-						class="block rounded-lg px-1 py-2 text-sm font-medium text-gray-700 hover:text-brand transition-colors duration-200"
+						class:list={[
+							"block rounded-lg px-1 py-2 text-sm text-gray-700 hover:text-brand transition-colors duration-200",
+							isActivePath(link.href) ? "font-bold text-brand" : "font-medium",
+						]}
+						aria-current={isActivePath(link.href) ? "page" : undefined}
 						data-menu-link
 					>{link.label}</a>
 				))}
@@ -87,7 +131,12 @@ const links = [
 			{links.map(link => (
 				<a
 					href={link.href}
-					class="text-gray-700 py-2 text-sm font-medium hover:text-brand transition-colors duration-200"
+					class:list={[
+						"text-gray-700 py-2 text-sm hover:text-brand transition-colors duration-200",
+						isActivePath(link.href) ? "font-bold text-brand" : "font-medium",
+					]}
+					data-nav-link
+					aria-current={isActivePath(link.href) ? "page" : undefined}
 					data-menu-link
 				>{link.label}</a>
 			))}
@@ -106,6 +155,43 @@ const links = [
 	const closeIcon = document.querySelector('[data-icon-close]');
 	const mobileMenu = document.querySelector('[data-mobile-menu]');
 	const menuLinks = document.querySelectorAll('[data-menu-link]');
+	const navRoot = document.querySelector('[data-nav-root]');
+	const navLinks = document.querySelectorAll<HTMLAnchorElement>('[data-nav-link]');
+	const navBasePath = navRoot?.getAttribute('data-base-path') ?? '/';
+
+	function normalizeNavPath(path: string) {
+		const normalizedBase = navBasePath.endsWith('/') ? navBasePath : `${navBasePath}/`;
+		const pathWithoutBase = normalizedBase !== '/' && path.startsWith(normalizedBase)
+			? `/${path.slice(normalizedBase.length)}`
+			: path;
+
+		return pathWithoutBase.endsWith('/') ? pathWithoutBase : `${pathWithoutBase}/`;
+	}
+
+	function updateActiveNavLink() {
+		const currentPath = normalizeNavPath(window.location.pathname);
+		const currentHash = window.location.hash;
+
+		navLinks.forEach((link) => {
+			const linkUrl = new URL(link.href);
+			const linkPath = normalizeNavPath(linkUrl.pathname);
+			const linkHash = linkUrl.hash;
+			const isMobileLink = link.closest('[data-mobile-menu]') !== null;
+			const isActive = linkHash
+				? linkPath === currentPath && linkHash === currentHash
+				: linkPath === currentPath;
+
+			link.classList.toggle('font-bold', isActive);
+			link.classList.toggle('font-normal', !isActive && !isMobileLink);
+			link.classList.toggle('font-medium', !isActive && isMobileLink);
+			link.classList.toggle('text-brand', isActive);
+			if (isActive) {
+				link.setAttribute('aria-current', 'page');
+			} else {
+				link.removeAttribute('aria-current');
+			}
+		});
+	}
 
 	function closeMenu() {
 		toggle?.setAttribute('aria-expanded', 'false');
@@ -135,4 +221,7 @@ const links = [
 
 	// zatvor menu po kliknutí na odkaz
 	menuLinks.forEach(link => link.addEventListener('click', closeMenu));
+	updateActiveNavLink();
+	window.addEventListener('hashchange', updateActiveNavLink);
+	window.addEventListener('popstate', updateActiveNavLink);
 </script>

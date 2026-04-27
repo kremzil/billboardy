@@ -10,10 +10,13 @@ Copy `.env.example` to `.env` and set:
 
 ```text
 PUBLIC_BILLBOARDY_API_BASE=https://www.billboardy.sk/wp-json/billboardy/v1
+PUBLIC_SITE_URL=https://www.billboardy.sk
 PUBLIC_GOOGLE_MAPS_API_KEY=...
 PUBLIC_CONTACT_URL=https://www.billboardy.sk/kontaktujte-nas/
 PUBLIC_PLACEHOLDER_IMAGE_URL=https://www.billboardy.sk/path/to/placeholder.jpg
 ```
+
+`PUBLIC_SITE_URL` is used to generate canonical URLs, Open Graph URLs, `robots.txt`, and `sitemap.xml`. With the current Astro base, public URLs are generated under `/mapa/`.
 
 If this app is hosted on a different origin than WordPress, add that origin in WordPress under **Settings -> Billboardy Map API -> Allowed frontend origins**.
 

@@ -13,7 +13,7 @@ export type AdTypeContent = {
 	advantages: Array<{ icon: string; title: string; desc: string }>;
 	formats: Array<{ label: string; size: string; desc: string }>;
 	useCases: string[];
-	minPrice: string;
+	minPrice?: string;
 	mapMediaType: string;
 };
 
@@ -37,7 +37,7 @@ export const TYPE_CONTENT: Record<AdTypeSlug, AdTypeContent> = {
 		title: "Billboard",
 		subtitle: "Najrozšírenejší formát vonkajšej reklamy na Slovensku",
 		heroImg:
-			"https://images.unsplash.com/photo-1667489012099-e68057919caa?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixlib=rb-4.1.0&q=80&w=1600",
+			"../../assets/billboard-type.webp",
 		accentColor: "#D80B17",
 		tagline: "Viditeľnosť na maximum",
 		seoTitle: "Billboard reklama na Slovensku - prenájom vonkajších plôch",
@@ -76,7 +76,7 @@ export const TYPE_CONTENT: Record<AdTypeSlug, AdTypeContent> = {
 		title: "Citylight",
 		subtitle: "Elegantná reklama v pešej zóne a MHD infraštruktúre",
 		heroImg:
-			"https://images.unsplash.com/photo-1635895625345-38c317ef472b?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixlib=rb-4.1.0&q=80&w=1600",
+			"../../assets/clv-type.webp",
 		accentColor: "#0F8B5F",
 		tagline: "Blízko ľuďom, blízko nákupu",
 		seoTitle: "Citylight reklama - prenájom osvetlených CLV plôch",
@@ -115,7 +115,7 @@ export const TYPE_CONTENT: Record<AdTypeSlug, AdTypeContent> = {
 		title: "Bigboard",
 		subtitle: "Veľkoformátová plocha pre hlavné cesty a dominantné mestské polohy",
 		heroImg:
-			"https://images.unsplash.com/photo-1630328071227-1ea360605cc5?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixlib=rb-4.1.0&q=80&w=1600",
+			"../../assets/bigboard-type.webp",
 		accentColor: "#106EBE",
 		tagline: "Väčší formát, silnejší zásah",
 		seoTitle: "Bigboard reklama - prenájom veľkoformátových reklamných plôch",
@@ -154,7 +154,7 @@ export const TYPE_CONTENT: Record<AdTypeSlug, AdTypeContent> = {
 		title: "Most",
 		subtitle: "Reklamná plocha na mostných konštrukciách a dopravných uzloch",
 		heroImg:
-			"https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixlib=rb-4.1.0&q=80&w=1600",
+			"../../assets/most.webp",
 		accentColor: "#334155",
 		tagline: "Viditeľné v prúde dopravy",
 		seoTitle: "Reklama na mostoch - prenájom plôch pri dopravných uzloch",
@@ -185,7 +185,7 @@ export const TYPE_CONTENT: Record<AdTypeSlug, AdTypeContent> = {
 			{ label: "Prémiový most", size: "Top uzol", desc: "Najfrekventovanejšie mestské koridory." },
 		],
 		useCases: commonUseCases,
-		minPrice: "350",
+		// minPrice: "350",
 		mapMediaType: "bridge",
 	},
 	plachta: {
@@ -193,7 +193,7 @@ export const TYPE_CONTENT: Record<AdTypeSlug, AdTypeContent> = {
 		title: "Plachta",
 		subtitle: "Flexibilný bannerový formát pre fasády, ploty a dočasné plochy",
 		heroImg:
-			"https://images.unsplash.com/photo-1494526585095-c41746248156?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixlib=rb-4.1.0&q=80&w=1600",
+			"../../assets/plachta.webp",
 		accentColor: "#B45309",
 		tagline: "Rýchla plocha pre výrazné posolstvo",
 		seoTitle: "Reklamná plachta - prenájom a umiestnenie bannerových plôch",
@@ -224,7 +224,7 @@ export const TYPE_CONTENT: Record<AdTypeSlug, AdTypeContent> = {
 			{ label: "Eventová plachta", size: "Krátkodobo", desc: "Rýchle kampane a podujatia." },
 		],
 		useCases: ["Eventy", "Stavebné projekty", "Retail", "Otvorenie prevádzky", "Sezónne akcie", "Lokálne služby"],
-		minPrice: "120",
+		// minPrice: "120",
 		mapMediaType: "banner",
 	},
 	fasada: {
@@ -232,7 +232,7 @@ export const TYPE_CONTENT: Record<AdTypeSlug, AdTypeContent> = {
 		title: "Fasáda",
 		subtitle: "Veľkoformátová reklama na budovách a viditeľných stenách",
 		heroImg:
-			"https://images.unsplash.com/flagged/photo-1579266139396-153844159aa7?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixlib=rb-4.1.0&q=80&w=1600",
+			"../../assets/fasada-type.webp",
 		accentColor: "#151719",
 		tagline: "Budova ako reklamný nosič",
 		seoTitle: "Fasádna reklama - prenájom veľkoformátových plôch na budovách",
@@ -263,7 +263,7 @@ export const TYPE_CONTENT: Record<AdTypeSlug, AdTypeContent> = {
 			{ label: "Veľká fasáda", size: "200 m²+", desc: "Dominantná plocha v centre mesta." },
 		],
 		useCases: ["Prémiové značky", "Automotive", "Reality", "Rekonštrukcie", "Móda", "Filmové premiéry"],
-		minPrice: "800",
+		// minPrice: "800",
 		mapMediaType: "facade",
 	},
 	"mega-plocha": {
@@ -271,7 +271,7 @@ export const TYPE_CONTENT: Record<AdTypeSlug, AdTypeContent> = {
 		title: "Mega plocha",
 		subtitle: "Najväčšie outdoor formáty pre kampane s maximálnym dopadom",
 		heroImg:
-			"https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixlib=rb-4.1.0&q=80&w=1600",
+			"../../assets/megaboard.webp",
 		accentColor: "#7F1D1D",
 		tagline: "Maximálny rozmer, maximálna pozornosť",
 		seoTitle: "Mega plocha - prenájom najväčších reklamných plôch",
@@ -302,7 +302,7 @@ export const TYPE_CONTENT: Record<AdTypeSlug, AdTypeContent> = {
 			{ label: "Špeciálna konštrukcia", size: "Na mieru", desc: "Riešenie podľa konkrétnej lokality." },
 		],
 		useCases: ["Image kampane", "Produktové launche", "Automotive", "Retail siete", "Eventy", "Prémiové značky"],
-		minPrice: "1200",
+		// minPrice: "1200",
 		mapMediaType: "mega",
 	},
 };

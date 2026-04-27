@@ -2,11 +2,11 @@
 import { Icon } from 'astro-icon/components'
 
 const BILLBOARD_IMG =
-	"https://images.unsplash.com/photo-1708674282655-3637d492dc74?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxjaXR5JTIwaGlnaHdheSUyMGJpbGxib2FyZCUyMGFkdmVydGlzaW5nfGVufDF8fHx8MTc3Njg0OTgwN3ww&ixlib=rb-4.1.0&q=80&w=800";
+	"./assets/billboard.webp";
 const BIGBOARD_IMG =
-	"https://images.unsplash.com/photo-1630328071227-1ea360605cc5?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxsYXJnZSUyMG91dGRvb3IlMjBiaWdib2FyZCUyMGFkdmVydGlzaW5nJTIwdXJiYW58ZW58MXx8fHwxNzc2ODQ5ODA3fDA&ixlib=rb-4.1.0&q=80&w=800";
+	"./assets/bigboard.webp";
 const CLV_IMG =
-	"https://images.unsplash.com/photo-1583603727597-e291a83c3c64?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxjaXR5JTIwbGlnaHRib3glMjBDTFYlMjBzdHJlZXQlMjBhZHZlcnRpc2luZyUyMHBhbmVsfGVufDF8fHx8MTc3Njg0OTgwOHww&ixlib=rb-4.1.0&q=80&w=800";
+	"./assets/clv.webp";
 
 interface PricingPlan {
 	name: string;
@@ -166,7 +166,8 @@ const basePath = import.meta.env.BASE_URL;
 
 										<div class="flex items-center gap-2 mb-3">
 											<span class="bg-gray-100 text-gray-900 px-2 py-0.5 rounded text-xs font-semibold">
-												Plan: {plan.size}
+												<Icon name="lucide:ruler" width="16" height="16" class="inline text-gray-400" />
+												{plan.size}
 											</span>
 										</div>
 

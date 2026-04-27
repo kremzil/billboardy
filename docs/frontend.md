@@ -15,6 +15,9 @@ Frontend находится в `map-frontend/` и реализован как о
 
 - `map-frontend/src/pages/index.astro`
 - `map-frontend/src/pages/typ/[slug].astro`
+- `map-frontend/src/data/site.ts`
+- `map-frontend/src/pages/robots.txt.ts`
+- `map-frontend/src/pages/sitemap.xml.ts`
 
 `index.astro` — основная страница приложения. На главной подключаются hero, блок цен и секция карты.
 
@@ -55,6 +58,7 @@ Footer содержит ссылки на словацкие kraje вместо 
 - быстрые фильтры по типу и применение фильтров из hero/footer;
 - работа с маркерами и кластерами;
 - popup и список объектов;
+- переключение в Street View через ближайшую панораму Google к центру карты или выбранной точке; в этом режиме список `Výber v aktuálnej oblasti` скрывается, а выбранная плоскость показывается отдельной подсказкой;
 - клиентский cache map payload'ов;
 - diff-обновление маркеров;
 - отмена устаревших `/map-points` запросов при активном pan/zoom/search.
@@ -75,6 +79,18 @@ Footer содержит ссылки на словацкие kraje вместо 
 - `map-frontend/astro.config.mjs`
 
 Тут определяются runtime/build настройки, которые не стоит зашивать в код.
+
+### SEO
+
+- `src/layouts/layout.astro` формирует базовые meta tags: `title`, `description`, `robots`, canonical URL, Open Graph, Twitter Card и JSON-LD `WebSite`.
+- `src/data/site.ts` хранит site origin, дефолтные SEO-тексты и helpers для абсолютных URL с учётом Astro `base: "/mapa/"`.
+- `src/pages/robots.txt.ts` генерирует `robots.txt` при static build.
+- `src/pages/sitemap.xml.ts` генерирует sitemap для главной страницы, контакта, GDPR/Cookies и страниц типов носителей.
+- Для production-домена используется `PUBLIC_SITE_URL`; по умолчанию он равен `https://www.billboardy.sk`.
+
+### Шрифт
+
+Основной интерфейсный шрифт — Plus Jakarta Sans, подключённый через Google Fonts в `src/layouts/layout.astro`. CSS token `--font-bb-sans` в `src/styles/global.css` содержит системные fallback-шрифты.
 
 ## Практические команды
 

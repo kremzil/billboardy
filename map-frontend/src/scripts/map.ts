@@ -135,6 +135,12 @@ type MarkerSpec = {
   bind: (marker: BillboardyMarker) => void;
 };
 
+type StreetViewPoint = {
+  title: string;
+  code: string;
+  locationLabel: string;
+};
+
 const strings = {
   title: 'Mapa reklamných plôch',
   intro: 'Vyberte si plochu podľa lokality, typu alebo katalógového čísla.',
@@ -162,6 +168,11 @@ const strings = {
   location: 'Lokalita',
   size: 'Rozmer',
   cta: 'Mám záujem',
+  mapView: 'Mapa',
+  streetView: 'Street View',
+  streetViewLoading: 'Načítavam Street View...',
+  streetViewUnavailable: 'Street View nie je dostupný v tejto lokalite.',
+  currentPoint: 'Aktuálna plocha',
 };
 
 const defaultConfig: MapConfig = {
@@ -207,6 +218,9 @@ const state: {
   markerById: Map<string, BillboardyMarker>;
   markerGroupById: Map<string, CoordinateMarkerGroup>;
   infoWindow: google.maps.InfoWindow | null;
+  streetViewService: google.maps.StreetViewService | null;
+  streetViewToggle: HTMLButtonElement | null;
+  streetViewPoint: StreetViewPoint | null;
   detailsCache: Map<string, AdSpace>;
   points: MapPoint[];
   items: MapItem[];
@@ -223,6 +237,9 @@ const state: {
   markerById: new Map(),
   markerGroupById: new Map(),
   infoWindow: null,
+  streetViewService: null,
+  streetViewToggle: null,
+  streetViewPoint: null,
   detailsCache: new Map(),
   points: [],
   items: [],
@@ -269,8 +286,10 @@ async function boot(container: HTMLElement): Promise<void> {
       clickableIcons: false,
     });
     state.infoWindow = new google.maps.InfoWindow({ maxWidth: 360 });
+    state.streetViewService = new google.maps.StreetViewService();
 
     bindControls(container);
+    bindStreetViewControl(container);
     applyMapSearch(container, mapSearchFromUrl());
     await waitForMapIdle();
     await refreshPoints(container, { includeBounds: true, fitToResults: false });
@@ -303,6 +322,7 @@ function renderShell(container: HTMLElement): void {
       <div class="bb-map-stage">
         <div class="bb-map-status" role="status" aria-live="polite">${strings.loading}</div>
         <div class="bb-map-canvas" aria-label="${strings.title}"></div>
+        <div class="bb-map-street-view-point" hidden></div>
         <aside class="bb-map-results" aria-label="${strings.selection}" hidden>
           <div class="bb-map-results-head">
             <h2>${strings.selection}</h2>
@@ -485,6 +505,23 @@ function bindControls(container: HTMLElement): void {
     if (inquiryTarget) {
       event.preventDefault();
       dispatchInquiryAdd(inquiryTarget);
+      return;
+    }
+
+    const streetViewTarget = element?.closest<HTMLElement>('[data-popup-action="street-view"]') ?? null;
+
+    if (streetViewTarget) {
+      event.preventDefault();
+      const latitude = Number(streetViewTarget.dataset.latitude);
+      const longitude = Number(streetViewTarget.dataset.longitude);
+
+      if (Number.isFinite(latitude) && Number.isFinite(longitude)) {
+        void showStreetViewAt(container, { lat: latitude, lng: longitude }, {
+          title: streetViewTarget.dataset.title ?? '',
+          code: streetViewTarget.dataset.code ?? '',
+          locationLabel: streetViewTarget.dataset.locationLabel ?? '',
+        });
+      }
     }
   });
 
@@ -495,6 +532,205 @@ function bindControls(container: HTMLElement): void {
 
     applyMapSearch(container, event.detail as HeroMapSearchDetail, true);
   });
+}
+
+function bindStreetViewControl(container: HTMLElement): void {
+  if (!state.map) {
+    return;
+  }
+
+  const control = document.createElement('div');
+  control.className = 'bb-map-view-control';
+
+  const button = document.createElement('button');
+  button.type = 'button';
+  button.className = 'bb-map-view-toggle';
+  button.textContent = strings.streetView;
+  button.setAttribute('aria-pressed', 'false');
+  button.addEventListener('click', () => {
+    if (!state.map) {
+      return;
+    }
+
+    const panorama = state.map.getStreetView();
+
+    if (panorama.getVisible()) {
+      panorama.setVisible(false);
+      syncStreetViewToggle();
+      return;
+    }
+
+    const center = state.map.getCenter()?.toJSON() ?? config.defaultCenter;
+    void showStreetViewAt(container, center);
+  });
+
+  control.append(button);
+  state.streetViewToggle = button;
+  state.map.controls[google.maps.ControlPosition.TOP_RIGHT].push(control);
+
+  state.map.getStreetView().addListener('visible_changed', () => {
+    syncStreetViewToggle();
+    syncStreetViewLayout(container);
+  });
+}
+
+async function showStreetViewAt(
+  container: HTMLElement,
+  location: google.maps.LatLngLiteral,
+  point: StreetViewPoint | null = null,
+): Promise<void> {
+  if (!state.map) {
+    return;
+  }
+
+  const status = container.querySelector<HTMLElement>('.bb-map-status');
+  const previousStatus = status ? currentStatus(status) : null;
+  const panorama = state.map.getStreetView();
+
+  status && setStatus(status, strings.streetViewLoading, 'loading');
+
+  try {
+    const streetViewData = await findStreetView(location);
+
+    if (!streetViewData?.location?.pano) {
+      status && setStatus(status, strings.streetViewUnavailable, 'error');
+      return;
+    }
+
+    panorama.setPano(streetViewData.location.pano);
+    panorama.setPov(streetViewPov(streetViewData, location));
+    state.streetViewPoint = point;
+    panorama.setVisible(true);
+    syncStreetViewToggle();
+    syncStreetViewLayout(container);
+    previousStatus && status && setStatus(status, previousStatus.message, previousStatus.mode);
+  } catch (error) {
+    console.error('Unable to load Street View.', error);
+    status && setStatus(status, strings.streetViewUnavailable, 'error');
+  }
+}
+
+function findStreetView(location: google.maps.LatLngLiteral): Promise<google.maps.StreetViewPanoramaData | null> {
+  const service = state.streetViewService ?? new google.maps.StreetViewService();
+  state.streetViewService = service;
+
+  return new Promise((resolve) => {
+    service.getPanorama({
+      location,
+      preference: google.maps.StreetViewPreference.NEAREST,
+      radius: 120,
+      sources: [google.maps.StreetViewSource.OUTDOOR],
+    }, (data, status) => {
+      if (status === google.maps.StreetViewStatus.OK && data) {
+        resolve(data);
+        return;
+      }
+
+      resolve(null);
+    }).catch(() => resolve(null));
+  });
+}
+
+function streetViewPov(
+  streetViewData: google.maps.StreetViewPanoramaData,
+  target: google.maps.LatLngLiteral,
+): google.maps.StreetViewPov {
+  const panoramaPosition = streetViewData.location?.latLng?.toJSON();
+
+  return {
+    heading: panoramaPosition ? headingBetween(panoramaPosition, target) : 0,
+    pitch: 0,
+  };
+}
+
+function headingBetween(from: google.maps.LatLngLiteral, to: google.maps.LatLngLiteral): number {
+  const fromLat = degreesToRadians(from.lat);
+  const toLat = degreesToRadians(to.lat);
+  const lngDelta = degreesToRadians(to.lng - from.lng);
+  const y = Math.sin(lngDelta) * Math.cos(toLat);
+  const x = Math.cos(fromLat) * Math.sin(toLat) - Math.sin(fromLat) * Math.cos(toLat) * Math.cos(lngDelta);
+  const heading = radiansToDegrees(Math.atan2(y, x));
+
+  return (heading + 360) % 360;
+}
+
+function degreesToRadians(value: number): number {
+  return value * Math.PI / 180;
+}
+
+function radiansToDegrees(value: number): number {
+  return value * 180 / Math.PI;
+}
+
+function syncStreetViewToggle(): void {
+  if (!state.map || !state.streetViewToggle) {
+    return;
+  }
+
+  const isVisible = state.map.getStreetView().getVisible();
+  state.streetViewToggle.textContent = isVisible ? strings.mapView : strings.streetView;
+  state.streetViewToggle.setAttribute('aria-pressed', String(isVisible));
+  state.streetViewToggle.classList.toggle('is-active', isVisible);
+}
+
+function syncStreetViewLayout(container: HTMLElement): void {
+  if (!state.map) {
+    return;
+  }
+
+  const isVisible = state.map.getStreetView().getVisible();
+
+  if (isVisible) {
+    state.selectionRequestController?.abort();
+    hideSelectionResults(container);
+    renderStreetViewPoint(container);
+    return;
+  }
+
+  state.streetViewPoint = null;
+  hideStreetViewPoint(container);
+  void refreshSelectionResults(container);
+}
+
+function renderStreetViewPoint(container: HTMLElement): void {
+  const point = state.streetViewPoint;
+  const node = container.querySelector<HTMLElement>('.bb-map-street-view-point');
+
+  if (!node || !point) {
+    hideStreetViewPoint(container);
+    return;
+  }
+
+  const code = point.code ? `<span>${strings.code} ${escapeHtml(point.code)}</span>` : '';
+  const location = point.locationLabel ? `<small>${escapeHtml(point.locationLabel)}</small>` : '';
+
+  node.hidden = false;
+  node.innerHTML = `
+    <strong>${strings.currentPoint}</strong>
+    <span>${escapeHtml(point.title)}</span>
+    ${code}
+    ${location}
+  `;
+}
+
+function hideStreetViewPoint(container: HTMLElement): void {
+  const node = container.querySelector<HTMLElement>('.bb-map-street-view-point');
+
+  if (!node) {
+    return;
+  }
+
+  node.hidden = true;
+  node.innerHTML = '';
+}
+
+function currentStatus(node: HTMLElement): { message: string; mode: 'loading' | 'ready' | 'empty' | 'error' } {
+  const mode = node.dataset.state;
+
+  return {
+    message: node.textContent ?? '',
+    mode: mode === 'loading' || mode === 'ready' || mode === 'empty' || mode === 'error' ? mode : 'ready',
+  };
 }
 
 function syncMediaFilterPills(container: HTMLElement): void {
@@ -788,6 +1024,12 @@ async function refreshSelectionResults(container: HTMLElement): Promise<void> {
     return;
   }
 
+  if (state.map.getStreetView().getVisible()) {
+    state.selectionRequestController?.abort();
+    hideSelectionResults(container);
+    return;
+  }
+
   const zoom = Math.round(state.map.getZoom() ?? config.defaultZoom);
 
   if (zoom < selectionMinZoom) {
@@ -816,6 +1058,11 @@ async function refreshSelectionResults(container: HTMLElement): Promise<void> {
     const payload = await fetchJson<AdSpacesPayload>(url, { signal: controller.signal });
 
     if (controller.signal.aborted || requestId !== state.selectionRequestSeq) {
+      return;
+    }
+
+    if (state.map?.getStreetView().getVisible()) {
+      hideSelectionResults(container);
       return;
     }
 
@@ -1451,18 +1698,30 @@ function popupContent(adSpace: AdSpace): string {
           ${adSpace.sizeLabel ? `<div><dt>${strings.size}</dt><dd>${escapeHtml(adSpace.sizeLabel)}</dd></div>` : ''}
         </dl>
         ${description}
-        <button
-          class="bb-map-popup-cta"
-          type="button"
-          data-popup-action="add-inquiry"
-          data-id="${escapeAttribute(adSpace.id)}"
-          data-code="${escapeAttribute(adSpace.code)}"
-          data-title="${escapeAttribute(adSpace.title)}"
-          data-media-type-label="${escapeAttribute(adSpace.mediaTypeLabel)}"
-          data-location-label="${escapeAttribute(adSpace.locationLabel)}"
-          data-size-label="${escapeAttribute(adSpace.sizeLabel)}"
-          data-image-url="${escapeAttribute(image)}"
-        >${strings.cta}</button>
+        <div class="bb-map-popup-actions">
+          <button
+            class="bb-map-popup-cta"
+            type="button"
+            data-popup-action="add-inquiry"
+            data-id="${escapeAttribute(adSpace.id)}"
+            data-code="${escapeAttribute(adSpace.code)}"
+            data-title="${escapeAttribute(adSpace.title)}"
+            data-media-type-label="${escapeAttribute(adSpace.mediaTypeLabel)}"
+            data-location-label="${escapeAttribute(adSpace.locationLabel)}"
+            data-size-label="${escapeAttribute(adSpace.sizeLabel)}"
+            data-image-url="${escapeAttribute(image)}"
+          >${strings.cta}</button>
+          <button
+            class="bb-map-popup-cta bb-map-popup-street-view"
+            type="button"
+            data-popup-action="street-view"
+            data-latitude="${escapeAttribute(String(adSpace.latitude))}"
+            data-longitude="${escapeAttribute(String(adSpace.longitude))}"
+            data-code="${escapeAttribute(adSpace.code)}"
+            data-title="${escapeAttribute(adSpace.title)}"
+            data-location-label="${escapeAttribute(adSpace.locationLabel)}"
+          >${strings.streetView}</button>
+        </div>
       </div>
     </article>
   `;
@@ -1654,6 +1913,7 @@ function loadGoogleMaps(apiKey: string): Promise<void> {
       try {
         await window.google.maps.importLibrary('maps');
         await window.google.maps.importLibrary('marker');
+        await window.google.maps.importLibrary('streetView');
 
         if (!isGoogleMapsReady()) {
           throw new Error('Google Maps API loaded without required map libraries.');
@@ -1701,7 +1961,8 @@ function loadGoogleMaps(apiKey: string): Promise<void> {
 function isGoogleMapsReady(): boolean {
   return typeof window.google?.maps?.Map === 'function'
     && typeof window.google?.maps?.marker?.AdvancedMarkerElement === 'function'
-    && typeof window.google?.maps?.InfoWindow === 'function';
+    && typeof window.google?.maps?.InfoWindow === 'function'
+    && typeof window.google?.maps?.StreetViewService === 'function';
 }
 
 function setStatus(node: HTMLElement, message: string, mode: 'loading' | 'ready' | 'empty' | 'error'): void {
