@@ -1,0 +1,9 @@
+RewriteEngine On
+
+RewriteRule ^billboardy/?$ /typ/billboard/ [R=301,L]
+RewriteRule ^citylight/?$ /typ/citylight/ [R=301,L]
+RewriteRule ^double-bigboardy/?$ /typ/bigboard/ [R=301,L]
+RewriteRule ^interaktivna-mapa-reklamnych-ploch/?$ /#mapa [R=301,L,NE]
+RewriteRule ^kategoria-produktu/billboard/?$ /typ/billboard/ [R=301,L]
+RewriteRule ^megaboardy/?$ /typ/mega-board/ [R=301,L]
+RewriteRule ^nas-tim/?$ /kontakt/ [R=301,L]
