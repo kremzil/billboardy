@@ -14,6 +14,7 @@ final class SettingsPage
             'placeholder_image_url' => '',
             'cache_ttl' => 600,
             'allowed_frontend_origins' => '',
+            'inquiry_recipient_email' => '',
         ];
     }
 
@@ -66,6 +67,9 @@ final class SettingsPage
             'allowed_frontend_origins' => isset($value['allowed_frontend_origins'])
                 ? sanitize_textarea_field((string) $value['allowed_frontend_origins'])
                 : $defaults['allowed_frontend_origins'],
+            'inquiry_recipient_email' => isset($value['inquiry_recipient_email'])
+                ? sanitize_email((string) $value['inquiry_recipient_email'])
+                : $defaults['inquiry_recipient_email'],
         ];
     }
 
@@ -143,6 +147,21 @@ final class SettingsPage
                                 name="<?php echo esc_attr(self::OPTION_NAME); ?>[allowed_frontend_origins]"
                             ><?php echo esc_textarea((string) $settings['allowed_frontend_origins']); ?></textarea>
                             <p class="description"><?php echo esc_html__('Optional newline-separated origins for a separately hosted Astro frontend, for example https://mapa.billboardy.sk.', 'billboardy-map-api'); ?></p>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th scope="row">
+                            <label for="billboardy-inquiry-recipient-email"><?php echo esc_html__('E-mail pre dopyty', 'billboardy-map-api'); ?></label>
+                        </th>
+                        <td>
+                            <input
+                                id="billboardy-inquiry-recipient-email"
+                                class="regular-text"
+                                type="email"
+                                name="<?php echo esc_attr(self::OPTION_NAME); ?>[inquiry_recipient_email]"
+                                value="<?php echo esc_attr((string) $settings['inquiry_recipient_email']); ?>"
+                            />
+                            <p class="description"><?php echo esc_html__('Ak pole necháte prázdne, dopyty sa budú posielať na administrátorský e-mail WordPress webu.', 'billboardy-map-api'); ?></p>
                         </td>
                     </tr>
                 </table>

@@ -27,7 +27,7 @@ const title = pageTitle ? `${pageTitle} | ${SITE_NAME}` : DEFAULT_TITLE;
 const canonicalUrl = absoluteUrl(canonicalPath);
 const ogImageUrl = absoluteUrl(image);
 const faviconSvg = withBasePath("favicon.svg");
-const faviconIco = withBasePath("favicon.ico");
+const faviconPng = withBasePath("favicon.png");
 const robotsContent = noindex ? "noindex, nofollow" : "index, follow";
 const structuredData = {
 	"@context": "https://schema.org",
@@ -47,11 +47,9 @@ const structuredData = {
 <html lang="sk">
 	<head>
 		<meta charset="utf-8" />
-		<link rel="preconnect" href="https://fonts.googleapis.com" />
-		<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-		<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" />
 		<link rel="icon" type="image/svg+xml" href={faviconSvg} />
-		<link rel="icon" href={faviconIco} />
+		<link rel="alternate icon" type="image/png" href={faviconPng} />
+		<link rel="apple-touch-icon" href={faviconPng} />
 		<meta name="viewport" content="width=device-width, initial-scale=1" />
 		<meta name="generator" content={Astro.generator} />
 		<meta name="description" content={description} />
@@ -84,5 +82,11 @@ const structuredData = {
 		<script>
 			import "../scripts/contactForms";
 		</script>
+<!-- Support chat widget -->
+<script
+  async
+  src="https://chat.printexpert.sk/widget-loader.js?siteKey=ea6431b176b64c639da2c32d2fecad6a"
+  data-site-key="ea6431b176b64c639da2c32d2fecad6a"
+></script>
 	</body>
 </html>

@@ -1,6 +1,6 @@
 # Текущее состояние
 
-Дата снимка: 2026-04-23
+Дата снимка: 2026-04-27
 
 ## Общая картина
 
@@ -50,6 +50,14 @@
 2. fallback на WooCommerce, если таблица пуста.
 
 То есть проект уже умеет жить не только поверх WooCommerce.
+
+## Текущая раскладка на Websupport
+
+- WordPress backend/CMS перенесён на `https://cms.billboardy.sk`.
+- Файлы WordPress лежат в `~/billboardy.sk/sub/cms`.
+- В `~/billboardy.sk/web` оставлен публичный каталог `mapa`, чтобы `https://www.billboardy.sk/mapa/` продолжал обслуживаться с основного домена.
+- Перед переносом создан архив `~/billboardy.sk/_backups/wp-to-cms-20260427-222120/web-before-move.tar.gz`.
+- `WP_HOME`, `WP_SITEURL`, а также значения `home` и `siteurl` в базе WordPress выставлены на `https://cms.billboardy.sk`.
 
 ## Текущие сильные стороны
 

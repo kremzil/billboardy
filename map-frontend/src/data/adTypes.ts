@@ -1,4 +1,4 @@
-export type AdTypeSlug = "billboard" | "citylight" | "bigboard" | "most" | "plachta" | "fasada" | "mega-plocha";
+export type AdTypeSlug = "billboard" | "citylight" | "bigboard" | "most" | "plachta" | "fasada" | "mega-board";
 
 export type AdTypeContent = {
 	slug: AdTypeSlug;
@@ -17,7 +17,7 @@ export type AdTypeContent = {
 	mapMediaType: string;
 };
 
-export const AD_TYPE_SLUGS: AdTypeSlug[] = ["billboard", "citylight", "bigboard", "most", "plachta", "fasada", "mega-plocha"];
+export const AD_TYPE_SLUGS: AdTypeSlug[] = ["billboard", "citylight", "bigboard", "most", "plachta", "fasada", "mega-board"];
 
 export const SLUG_TO_TYPE: Record<AdTypeSlug, string> = {
 	billboard: "Billboard",
@@ -26,7 +26,7 @@ export const SLUG_TO_TYPE: Record<AdTypeSlug, string> = {
 	most: "Most",
 	plachta: "Plachta",
 	fasada: "Fasáda",
-	"mega-plocha": "Mega plocha",
+	"mega-board": "Mega plocha",
 };
 
 const commonUseCases = ["Brandové kampane", "Produktové kampane", "Retail", "Reality", "Eventy", "Sezónne akcie"];
@@ -266,22 +266,22 @@ export const TYPE_CONTENT: Record<AdTypeSlug, AdTypeContent> = {
 		// minPrice: "800",
 		mapMediaType: "facade",
 	},
-	"mega-plocha": {
-		slug: "mega-plocha",
-		title: "Mega plocha",
+	"mega-board": {
+		slug: "mega-board",
+		title: "Mega board",
 		subtitle: "Najväčšie outdoor formáty pre kampane s maximálnym dopadom",
 		heroImg:
 			"../../assets/megaboard.webp",
 		accentColor: "#7F1D1D",
 		tagline: "Maximálny rozmer, maximálna pozornosť",
-		seoTitle: "Mega plocha - prenájom najväčších reklamných plôch",
+		seoTitle: "Mega board - prenájom najväčších reklamných plôch",
 		seoText: [
-			"Mega plocha je určená pre kampane, ktoré potrebujú dominovať v priestore a pracovať s veľkým vizuálnym gestom.",
+			"Mega board je určený pre kampane, ktoré potrebujú dominovať v priestore a pracovať s veľkým vizuálnym gestom.",
 			"Používa sa na výnimočných mestských a dopravných polohách, kde štandardný formát nestačí.",
-			"Je vhodná pre uvedenie produktov, image kampane, veľké eventy a značky, ktoré potrebujú prémiovú viditeľnosť.",
+			"Je vhodný pre uvedenie produktov, image kampane, veľké eventy a značky, ktoré potrebujú prémiovú viditeľnosť.",
 		],
 		specs: [
-			{ label: "Rozmer", value: "Od 50 m² vyššie" },
+			{ label: "Rozmer", value: "Od 20 x 8 m vyššie" },
 			{ label: "Materiál", value: "PVC, mesh, panelové riešenie" },
 			{ label: "Umiestnenie", value: "Prémiové mestské a cestné polohy" },
 			{ label: "Inštalácia", value: "Individuálne podľa konštrukcie" },
@@ -297,7 +297,7 @@ export const TYPE_CONTENT: Record<AdTypeSlug, AdTypeContent> = {
 			{ icon: "lucide:bar-chart-2", title: "Image efekt", desc: "Riešenie pre kampane s vysokou hodnotou zásahu." },
 		],
 		formats: [
-			{ label: "Megaboard", size: "50 m²+", desc: "Veľký formát pri silných dopravných bodoch." },
+			{ label: "Megaboard", size: "od 20 x 8 m", desc: "Veľký formát pri silných dopravných bodoch." },
 			{ label: "Mestská dominanta", size: "Individuálny", desc: "Plocha na výnimočnej mestskej polohe." },
 			{ label: "Špeciálna konštrukcia", size: "Na mieru", desc: "Riešenie podľa konkrétnej lokality." },
 		],

@@ -11,8 +11,8 @@ interface Props {
 
 const {
 	id = "mapa",
-	title = "Reklamné plochy na mape",
-	summary = "Načítavam reklamné plochy...",
+	title = "Interaktívna mapa reklamných ploch",
+	summary = "Vyberte si vhodnú reklamnú plochu na interaktívnej mape a odošlite nezáväznú žiadosť o rezerváciu. Nájdite billboardy, bigboardy, citylighty a ďalšie vonkajšie reklamné plochy podľa lokality, typu nosiča a dostupnosti.",
 	initialMediaType = "",
 	filterLabel = "",
 	lockMediaType = false,
@@ -46,7 +46,7 @@ const lockedFilterLabel = filterLabel || selectedFilter?.label || "Vybraný typ"
 			<header class="bb-map-header">
 				<div>
 					<h2 id="bb-map-title">{title}</h2>
-					<p class="bb-map-summary" data-map-summary>{summary}</p>
+					<p class="bb-map-summary max-w-4xl">{summary}</p>
 				</div>
 			</header>
 

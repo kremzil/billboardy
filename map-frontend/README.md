@@ -12,7 +12,6 @@ Copy `.env.example` to `.env` and set:
 PUBLIC_BILLBOARDY_API_BASE=https://www.billboardy.sk/wp-json/billboardy/v1
 PUBLIC_SITE_URL=https://www.billboardy.sk
 PUBLIC_GOOGLE_MAPS_API_KEY=...
-PUBLIC_CONTACT_URL=https://www.billboardy.sk/kontaktujte-nas/
 PUBLIC_PLACEHOLDER_IMAGE_URL=https://www.billboardy.sk/path/to/placeholder.jpg
 ```
 

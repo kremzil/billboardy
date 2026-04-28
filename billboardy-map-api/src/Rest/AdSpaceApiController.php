@@ -144,7 +144,12 @@ final class AdSpaceApiController
             );
         }
 
-        $recipient = sanitize_email((string) get_option('admin_email'));
+        $recipient = sanitize_email((string) SettingsPage::get()['inquiry_recipient_email']);
+
+        if ($recipient === '' || !is_email($recipient)) {
+            $recipient = sanitize_email((string) get_option('admin_email'));
+        }
+
         $subject = $this->inquirySubject($source, count($items));
         $body = $this->inquiryEmailBody($source, $name, $email, $phone, $company, $note, $items, [
             'adType' => $adType,

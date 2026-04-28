@@ -264,17 +264,17 @@ const REGIONS = [
 
             <!-- GDPR checkbox -->
             <label class="flex items-start gap-3 cursor-pointer select-none">
-              <input type="checkbox" id="f-gdpr" name="gdpr" class="sr-only" required />
-              <div
-                id="gdpr-box"
-                class="w-5 h-5 mt-0.5 rounded-md border-2 flex items-center justify-center shrink-0 border-gray-200 bg-white  transition-all"
-             
-              >
-                <Icon id="gdpr-check" name="lucide:check" class="size-5 text-white hidden" />
-              </div>
+              <input
+                type="checkbox"
+                id="f-gdpr"
+                name="gdpr"
+                class="mt-0.5 shrink-0 cursor-pointer"
+                style="width:20px;height:20px;min-width:20px;accent-color:var(--color-brand);"
+                required
+              />
               <span class="text-xs text-gray-500 leading-relaxed" style="font-weight:500;">
                 Súhlasím so{" "}
-                <a href="#" class="underline text-brand">spracovaním osobných údajov</a>{" "}
+                <a href="/gdprcookies" class="underline text-brand">spracovaním osobných údajov</a>{" "}
                 v súlade s GDPR. Vaše údaje slúžia výhradne na vybavenie dopytu a nebudú
                 poskytnuté tretím stranám.
               </span>
@@ -311,7 +311,7 @@ const REGIONS = [
         <!-- Photo card -->
         <div class="rounded-2xl overflow-hidden relative h-44 shadow-sm">
           <img
-            src="./kpk.webp"
+            src="/kpk.webp"
             alt="KPK reklama logo"
             class="w-full h-full object-cover"
             loading="lazy"

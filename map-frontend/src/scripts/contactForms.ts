@@ -34,8 +34,6 @@ function bindContactForm(form: HTMLFormElement): void {
     form.querySelector<HTMLElement>('[data-contact-message]') ??
     form.parentElement?.querySelector<HTMLElement>('[data-contact-message]');
   const gdpr = form.querySelector<HTMLInputElement>('input[name="gdpr"]');
-  const gdprBox = document.getElementById('gdpr-box');
-  const gdprCheck = document.getElementById('gdpr-check');
   const reset = success?.querySelector<HTMLButtonElement>('[data-contact-reset]');
 
   const updateSubmitState = () => {
@@ -50,32 +48,13 @@ function bindContactForm(form: HTMLFormElement): void {
     submit.disabled = !valid;
   };
 
-  const updateGdprVisual = () => {
-    if (!gdpr || !gdprBox || !gdprCheck) {
-      updateSubmitState();
-      return;
-    }
-
-    if (gdpr.checked) {
-      gdprBox.style.borderColor = 'var(--color-brand)';
-      gdprBox.style.background = 'var(--color-brand)';
-      gdprCheck.classList.remove('hidden');
-    } else {
-      gdprBox.style.borderColor = '#d1d5db';
-      gdprBox.style.background = 'white';
-      gdprCheck.classList.add('hidden');
-    }
-
-    updateSubmitState();
-  };
-
   form.addEventListener('input', updateSubmitState);
-  form.addEventListener('change', updateGdprVisual);
+  form.addEventListener('change', updateSubmitState);
   reset?.addEventListener('click', () => {
     form.reset();
     setLoading(form, false);
     setMessage(message, '', 'muted');
-    updateGdprVisual();
+    updateSubmitState();
     showFormAgain(form);
   });
 
@@ -84,7 +63,7 @@ function bindContactForm(form: HTMLFormElement): void {
     void submitContactForm(form, message);
   });
 
-  updateGdprVisual();
+  updateSubmitState();
 }
 
 async function submitContactForm(form: HTMLFormElement, message?: HTMLElement | null): Promise<void> {
