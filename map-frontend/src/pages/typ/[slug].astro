@@ -1,4 +1,5 @@
 ---
+import { Image } from "astro:assets";
 import { Icon } from "astro-icon/components";
 import Layout from "../../layouts/layout.astro";
 import MapSection from "../../components/MapSection.astro";
@@ -16,7 +17,18 @@ const homeHref = basePath;
 const typeHref = (item: AdTypeSlug) => `${basePath}typ/${item}/`;
 const otherTypes = AD_TYPE_SLUGS.filter((item) => item !== slug);
 const seoDescription = `${content.subtitle}. Pozrite si dostupné plochy na interaktívnej mape a vyberte lokalitu pre vašu outdoor kampaň.`;
-const ogImage = content.heroImg.replace("../../", "/");
+const heroImage = content.heroImg.replace("../../", "/");
+const heroImageDimensions: Record<AdTypeSlug, { width: number; height: number }> = {
+	billboard: { width: 1125, height: 707 },
+	citylight: { width: 1200, height: 1500 },
+	bigboard: { width: 1048, height: 644 },
+	most: { width: 1200, height: 656 },
+	plachta: { width: 1200, height: 568 },
+	fasada: { width: 1200, height: 1109 },
+	"mega-board": { width: 1200, height: 675 },
+};
+const ogImage = heroImage;
+const heroDimensions = heroImageDimensions[slug];
 const stats = [
 	{ label: "Dostupné plochy", value: "Mapa" },
 	{ label: "Mestá na Slovensku", value: "12+" },
@@ -41,7 +53,16 @@ const stats = [
 		</div>
 
 		<section class="relative min-h-120 overflow-hidden">
-			<img src={content.heroImg} alt={content.title} class="absolute inset-0 h-full w-full object-cover" />
+			<Image
+				src={heroImage}
+				alt={content.title}
+				width={heroDimensions.width}
+				height={heroDimensions.height}
+				loading="eager"
+				decoding="async"
+				fetchpriority="high"
+				class="absolute inset-0 h-full w-full object-cover"
+			/>
 			<div class="absolute inset-0 bg-[linear-gradient(to_right,rgba(21,23,25,0.88)_35%,rgba(21,23,25,0.28))]"></div>
 			<div class="relative mx-auto flex min-h-120 max-w-7xl items-center px-4 py-16 sm:px-6 lg:px-8">
 				<div class="max-w-2xl">

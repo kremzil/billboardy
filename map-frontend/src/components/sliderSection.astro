@@ -1,12 +1,22 @@
 ---
+import { Image } from 'astro:assets'
 import { Icon } from 'astro-icon/components'
 
-const BILLBOARD_IMG =
-	"./assets/billboard.webp";
-const BIGBOARD_IMG =
-	"./assets/bigboard.webp";
-const CLV_IMG =
-	"./assets/clv.webp";
+const BILLBOARD_IMG = {
+	src: "/assets/billboard.webp",
+	width: 1200,
+	height: 799,
+};
+const BIGBOARD_IMG = {
+	src: "/assets/bigboard.webp",
+	width: 1200,
+	height: 711,
+};
+const CLV_IMG = {
+	src: "/assets/clv.webp",
+	width: 800,
+	height: 450,
+};
 
 interface PricingPlan {
 	name: string;
@@ -15,7 +25,11 @@ interface PricingPlan {
 	period: string;
 	popular: boolean;
 	features: string[];
-	image: string;
+	image: {
+		src: string;
+		width: number;
+		height: number;
+	};
 	location: string;
 	typeSlug: string;
 }
@@ -140,9 +154,11 @@ const basePath = import.meta.env.BASE_URL;
 							block.plans.map((plan) => (
 								<article class="bg-white rounded-2xl border border-gray-200 overflow-hidden hover:shadow-xl transition-all duration-300 flex flex-col group">
 									<div class="relative h-44 overflow-hidden">
-										<img
-											src={plan.image}
+										<Image
+											src={plan.image.src}
 											alt={plan.name}
+											width={plan.image.width}
+											height={plan.image.height}
 											loading="lazy"
 											class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
 										/>

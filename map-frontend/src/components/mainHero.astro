@@ -1,7 +1,8 @@
 ---
+import { Image } from 'astro:assets'
 import { Icon } from 'astro-icon/components'
 
-const HERO_BG = "./main-hero.webp";
+const HERO_BG = "/main-hero.webp";
 
 const REGION_OPTIONS = [
   { value: '', label: 'Celé Slovensko' },
@@ -35,7 +36,16 @@ const STATS = [
 <section class="relative min-h-screen flex items-center justify-center overflow-hidden">
   <!-- bg -->
   <div class="absolute inset-0">
-    <img src={HERO_BG} alt="Bratislava city skyline" class="w-full h-full object-cover" />
+    <Image
+      src={HERO_BG}
+      alt="Bratislava city skyline"
+      width={1920}
+      height={2880}
+      loading="eager"
+      decoding="async"
+      fetchpriority="high"
+      class="w-full h-full object-cover"
+    />
     <div class="absolute inset-0 bg-linear-to-b from-black/60 via-black/50 to-black/70" />
   </div>
 
