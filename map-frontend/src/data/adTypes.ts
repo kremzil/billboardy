@@ -26,7 +26,7 @@ export const SLUG_TO_TYPE: Record<AdTypeSlug, string> = {
 	most: "Most",
 	plachta: "Plachta",
 	fasada: "Fasáda",
-	"mega-board": "Mega plocha",
+	"mega-board": "Mega board",
 };
 
 const commonUseCases = ["Brandové kampane", "Produktové kampane", "Retail", "Reality", "Eventy", "Sezónne akcie"];
