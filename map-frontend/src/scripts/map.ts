@@ -405,9 +405,10 @@ function bindControls(container: HTMLElement): void {
   let searchTimer = window.setTimeout(() => undefined, 0);
 
   form.addEventListener('change', () => {
+    const viewportChanged = resetMapViewForFilterChange(container);
     syncMediaFilterPills(container);
     state.selectionPage = 1;
-    void refreshPoints(container, { includeBounds: true, fitToResults: false });
+    refreshPointsAfterFilterChange(container, viewportChanged);
   });
 
   form.addEventListener('input', (event) => {
@@ -424,9 +425,10 @@ function bindControls(container: HTMLElement): void {
 
   form.addEventListener('reset', () => {
     window.setTimeout(() => {
+      const viewportChanged = resetMapViewForFilterChange(container);
       syncMediaFilterPills(container);
       state.selectionPage = 1;
-      void refreshPoints(container, { includeBounds: true, fitToResults: false });
+      refreshPointsAfterFilterChange(container, viewportChanged);
     }, 0);
   });
 
@@ -438,9 +440,10 @@ function bindControls(container: HTMLElement): void {
     }
 
     mediaSelect.value = pill.dataset.filterValue ?? '';
+    const viewportChanged = resetMapViewForFilterChange(container);
     syncMediaFilterPills(container);
     state.selectionPage = 1;
-    void refreshPoints(container, { includeBounds: true, fitToResults: false });
+    refreshPointsAfterFilterChange(container, viewportChanged);
   });
 
   results.addEventListener('click', (event) => {
@@ -572,6 +575,48 @@ function bindStreetViewControl(container: HTMLElement): void {
     syncStreetViewToggle();
     syncStreetViewLayout(container);
   });
+}
+
+function resetMapViewForFilterChange(container: HTMLElement): boolean {
+  exitStreetView(container);
+
+  if (!state.map) {
+    return false;
+  }
+
+  const currentZoom = state.map.getZoom() ?? config.defaultZoom;
+  const targetZoom = Math.min(currentZoom, config.defaultZoom);
+
+  if (Math.round(currentZoom) <= Math.round(targetZoom)) {
+    return false;
+  }
+
+  state.map.setZoom(targetZoom);
+  return true;
+}
+
+function refreshPointsAfterFilterChange(container: HTMLElement, waitForIdle: boolean): void {
+  if (waitForIdle) {
+    return;
+  }
+
+  void refreshPoints(container, { includeBounds: true, fitToResults: false });
+}
+
+function exitStreetView(container: HTMLElement): void {
+  if (!state.map) {
+    return;
+  }
+
+  const panorama = state.map.getStreetView();
+  state.streetViewPoint = null;
+
+  if (panorama.getVisible()) {
+    panorama.setVisible(false);
+  }
+
+  syncStreetViewToggle();
+  hideStreetViewPoint(container);
 }
 
 async function showStreetViewAt(
@@ -770,6 +815,10 @@ function applyMapSearch(container: HTMLElement, detail: HeroMapSearchDetail, tri
 
   if (!state.map) {
     return;
+  }
+
+  if (triggerRefresh) {
+    exitStreetView(container);
   }
 
   if (region !== '') {
@@ -1188,9 +1237,10 @@ function renderSelectionCards(container: HTMLElement, payload: AdSpacesPayload):
 
 function selectionCard(adSpace: AdSpace): string {
   const image = adSpace.imageUrl || config.placeholderImageUrl;
+  const cardClass = image ? 'bb-map-result-card' : 'bb-map-result-card bb-map-result-card-no-image';
 
   return `
-    <article class="bb-map-result-card" data-card-action="focus-ad-space" data-card-id="${escapeAttribute(adSpace.id)}">
+    <article class="${cardClass}" data-card-action="focus-ad-space" data-card-id="${escapeAttribute(adSpace.id)}">
       ${image ? `<img src="${escapeAttribute(image)}" alt="${escapeAttribute(adSpace.title)}" loading="lazy" />` : ''}
       <div class="bb-map-result-body">
         <strong>${escapeHtml(adSpace.title)}</strong>
