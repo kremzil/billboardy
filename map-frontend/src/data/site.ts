@@ -3,7 +3,7 @@ export const SITE_ORIGIN = (import.meta.env.PUBLIC_SITE_URL || "https://www.bill
 export const DEFAULT_TITLE = "Billboardy.sk - Vaša cesta k úspešnej vonkajšej reklame";
 export const DEFAULT_DESCRIPTION =
 	"Prenájom billboardov, bigboardov, citylightov a reklamných plôch po celom Slovensku. Zabezpečíme tlač, inštaláciu aj výber plochy v interaktívnej mape.";
-export const DEFAULT_OG_IMAGE = "/logo.jpg";
+export const DEFAULT_OG_IMAGE = "/og-image.png";
 
 export function withBasePath(path = "") {
 	const basePath = import.meta.env.BASE_URL || "/";
