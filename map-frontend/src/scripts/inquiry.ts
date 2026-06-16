@@ -12,6 +12,7 @@ type InquiryAddEvent = CustomEvent<InquiryItem>;
 
 const storageKey = 'billboardy.inquiry.items';
 const root = document.querySelector<HTMLElement>('[data-inquiry-widget]');
+let lastFocused: HTMLElement | null = null;
 
 if (root) {
   bootInquiry(root);
@@ -60,6 +61,33 @@ function bootInquiry(container: HTMLElement): void {
   document.addEventListener('keydown', (event) => {
     if (event.key === 'Escape' && !modal.hidden) {
       closeModal(modal);
+    }
+  });
+
+  modal.addEventListener('keydown', (event) => {
+    if (event.key !== 'Tab' || modal.hidden) {
+      return;
+    }
+
+    const dialog = modal.querySelector<HTMLElement>('.bb-inquiry-dialog') ?? modal;
+    const focusables = getFocusableElements(dialog);
+
+    if (focusables.length === 0) {
+      return;
+    }
+
+    const first = focusables[0];
+    const last = focusables[focusables.length - 1];
+    const active = document.activeElement;
+
+    if (event.shiftKey) {
+      if (active === first || !dialog.contains(active)) {
+        event.preventDefault();
+        last.focus();
+      }
+    } else if (active === last) {
+      event.preventDefault();
+      first.focus();
     }
   });
 
@@ -181,14 +209,31 @@ async function submitInquiry(
 }
 
 function openModal(modal: HTMLElement): void {
+  lastFocused = document.activeElement instanceof HTMLElement ? document.activeElement : null;
   modal.hidden = false;
   document.documentElement.classList.add('bb-inquiry-open');
-  modal.querySelector<HTMLInputElement>('input[name="name"]')?.focus();
+  const dialog = modal.querySelector<HTMLElement>('.bb-inquiry-dialog') ?? modal;
+  const firstField = modal.querySelector<HTMLInputElement>('input[name="name"]');
+  (firstField ?? getFocusableElements(dialog)[0])?.focus();
 }
 
 function closeModal(modal: HTMLElement): void {
   modal.hidden = true;
   document.documentElement.classList.remove('bb-inquiry-open');
+
+  if (lastFocused && lastFocused.isConnected && lastFocused.getClientRects().length > 0) {
+    lastFocused.focus();
+  }
+
+  lastFocused = null;
+}
+
+function getFocusableElements(scope: HTMLElement): HTMLElement[] {
+  const selector = 'a[href], button:not([disabled]), input:not([disabled]):not([type="hidden"]), textarea:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])';
+
+  return Array.from(scope.querySelectorAll<HTMLElement>(selector)).filter(
+    (element) => element.getClientRects().length > 0,
+  );
 }
 
 function showMessage(node: HTMLElement, text: string, state: 'muted' | 'success' | 'error'): void {

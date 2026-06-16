@@ -84,7 +84,26 @@ const lockedFilterLabel = filterLabel || selectedFilter?.label || "Vybraný typ"
 			<div class="bb-map-layout">
 				<aside class="bb-map-results" aria-label="Výber v aktuálnej oblasti" hidden>
 					<div class="bb-map-results-head">
-						<h3>Výber v aktuálnej oblasti</h3>
+						<div class="bb-map-results-title-row">
+							<h3>Výber v aktuálnej oblasti</h3>
+							<div class="bb-map-results-actions">
+								<button
+									type="button"
+									class="bb-map-results-toggle"
+									data-map-results-toggle
+									aria-label="Rozbaliť zoznam"
+									aria-expanded="false"
+									title="Rozbaliť zoznam"
+								><span aria-hidden="true"></span></button>
+								<button
+									type="button"
+									class="bb-map-zoom-out"
+									data-map-zoom-out
+									aria-label="Oddialiť mapu"
+									title="Oddialiť mapu"
+								><span aria-hidden="true">←</span></button>
+							</div>
+						</div>
 						<p>Priblížte mapu pre výber plôch v aktuálnej oblasti.</p>
 					</div>
 					<div class="bb-map-results-list"></div>

@@ -112,6 +112,7 @@ type CoordinateMarkerGroup = {
 
 type BillboardyMarker = google.maps.marker.AdvancedMarkerElement & {
   __billboardyMediaType?: string;
+  __billboardyPointIds?: string[];
 };
 
 type BillboardyClusterMarker = ClusterMarker & {
@@ -173,6 +174,12 @@ const strings = {
   streetViewLoading: 'Načítavam Street View...',
   streetViewUnavailable: 'Street View nie je dostupný v tejto lokalite.',
   currentPoint: 'Aktuálna plocha',
+  searchLoading: 'Hľadám…',
+  searchEmpty: 'Nenašli sa žiadne plochy.',
+  searchClear: 'Vymazať',
+  retry: 'Skúsiť znova',
+  resetFilters: 'Zrušiť filtre',
+  zoomOut: 'Oddialiť mapu',
 };
 
 const defaultConfig: MapConfig = {
@@ -229,6 +236,7 @@ const state: {
   selectionPage: number;
   requestSeq: number;
   selectionRequestSeq: number;
+  activeMarker: BillboardyMarker | null;
 } = {
   map: null,
   clusterer: null,
@@ -248,6 +256,7 @@ const state: {
   selectionPage: 1,
   requestSeq: 0,
   selectionRequestSeq: 0,
+  activeMarker: null,
 };
 
 let googleMapsPromise: Promise<void> | null = null;
@@ -286,10 +295,12 @@ async function boot(container: HTMLElement): Promise<void> {
       clickableIcons: false,
     });
     state.infoWindow = new google.maps.InfoWindow({ maxWidth: 360 });
+    state.infoWindow.addListener('closeclick', () => setActiveMarker(null));
     state.streetViewService = new google.maps.StreetViewService();
 
     bindControls(container);
     bindStreetViewControl(container);
+    bindSearchControl(container);
     applyMapSearch(container, mapSearchFromUrl());
     await waitForMapIdle();
     await refreshPoints(container, { includeBounds: true, fitToResults: false });
@@ -325,7 +336,13 @@ function renderShell(container: HTMLElement): void {
         <div class="bb-map-street-view-point" hidden></div>
         <aside class="bb-map-results" aria-label="${strings.selection}" hidden>
           <div class="bb-map-results-head">
-            <h2>${strings.selection}</h2>
+            <div class="bb-map-results-title-row">
+              <h2>${strings.selection}</h2>
+              <div class="bb-map-results-actions">
+                <button type="button" class="bb-map-results-toggle" data-map-results-toggle aria-label="Rozbaliť zoznam" aria-expanded="false" title="Rozbaliť zoznam"><span aria-hidden="true"></span></button>
+                <button type="button" class="bb-map-zoom-out" data-map-zoom-out aria-label="Oddialiť mapu" title="Oddialiť mapu"><span aria-hidden="true">←</span></button>
+              </div>
+            </div>
             <p>Priblížte mapu pre výber plôch v aktuálnej oblasti.</p>
           </div>
           <div class="bb-map-results-list"></div>
@@ -402,7 +419,18 @@ function bindControls(container: HTMLElement): void {
   const form = mustGet<HTMLFormElement>('.bb-map-filters', container);
   const results = mustGet<HTMLElement>('.bb-map-results-list', container);
   const mediaSelect = container.querySelector<HTMLSelectElement>('select[name="media_type"]');
+  const zoomOut = container.querySelector<HTMLButtonElement>('[data-map-zoom-out]');
+  const resultsToggle = container.querySelector<HTMLButtonElement>('[data-map-results-toggle]');
   let searchTimer = window.setTimeout(() => undefined, 0);
+
+  zoomOut?.addEventListener('click', () => {
+    zoomOutFromSelection(container);
+  });
+
+  resultsToggle?.addEventListener('click', () => {
+    const resultsPanel = container.querySelector<HTMLElement>('.bb-map-results');
+    setSelectionExpanded(container, !resultsPanel?.classList.contains('is-mobile-expanded'));
+  });
 
   form.addEventListener('change', () => {
     const viewportChanged = resetMapViewForFilterChange(container);
@@ -486,6 +514,65 @@ function bindControls(container: HTMLElement): void {
 
   });
 
+  results.addEventListener('mouseover', (event) => {
+    const card = event.target instanceof Element ? event.target.closest<HTMLElement>('[data-card-id]') : null;
+
+    if (!card) {
+      return;
+    }
+
+    const related = event.relatedTarget instanceof Node ? event.relatedTarget : null;
+
+    if (related && card.contains(related)) {
+      return;
+    }
+
+    highlightMarkerForCard(card.dataset.cardId ?? '', true);
+  });
+
+  results.addEventListener('mouseout', (event) => {
+    const card = event.target instanceof Element ? event.target.closest<HTMLElement>('[data-card-id]') : null;
+
+    if (!card) {
+      return;
+    }
+
+    const related = event.relatedTarget instanceof Node ? event.relatedTarget : null;
+
+    if (related && card.contains(related)) {
+      return;
+    }
+
+    highlightMarkerForCard(card.dataset.cardId ?? '', false);
+  });
+
+  const statusNode = container.querySelector<HTMLElement>('.bb-map-status');
+
+  statusNode?.addEventListener('click', (event) => {
+    const button = event.target instanceof Element ? event.target.closest<HTMLButtonElement>('[data-status-action]') : null;
+
+    if (!button) {
+      return;
+    }
+
+    const action = button.dataset.statusAction;
+
+    if (action === 'retry') {
+      void refreshPoints(container, { includeBounds: true, fitToResults: false });
+      return;
+    }
+
+    if (action === 'reset-filters') {
+      resetAllFilters(container);
+      return;
+    }
+
+    if (action === 'zoom-out' && state.map) {
+      const current = Math.round(state.map.getZoom() ?? config.defaultZoom);
+      state.map.setZoom(Math.max(config.defaultZoom - 1, current - 2));
+    }
+  });
+
   document.addEventListener('click', (event) => {
     const element = event.target instanceof Element ? event.target : null;
     const target = element?.closest<HTMLElement>('[data-popup-action="open-point"]') ?? null;
@@ -537,6 +624,41 @@ function bindControls(container: HTMLElement): void {
   });
 }
 
+function zoomOutFromSelection(container: HTMLElement): void {
+  if (!state.map) {
+    return;
+  }
+
+  exitStreetView(container);
+  state.infoWindow?.close();
+  state.selectionPage = 1;
+  hideSelectionResults(container);
+
+  const currentZoom = Math.round(state.map.getZoom() ?? selectionMinZoom);
+  const targetZoom = Math.max(
+    config.defaultZoom,
+    Math.min(selectionMinZoom - 1, currentZoom - 3),
+  );
+
+  state.map.setZoom(targetZoom);
+}
+
+function setSelectionExpanded(container: HTMLElement, expanded: boolean): void {
+  const results = container.querySelector<HTMLElement>('.bb-map-results');
+  const toggle = container.querySelector<HTMLButtonElement>('[data-map-results-toggle]');
+
+  results?.classList.toggle('is-mobile-expanded', expanded);
+
+  if (!toggle) {
+    return;
+  }
+
+  const label = expanded ? 'Zbaliť zoznam' : 'Rozbaliť zoznam';
+  toggle.setAttribute('aria-expanded', String(expanded));
+  toggle.setAttribute('aria-label', label);
+  toggle.title = label;
+}
+
 function bindStreetViewControl(container: HTMLElement): void {
   if (!state.map) {
     return;
@@ -575,6 +697,251 @@ function bindStreetViewControl(container: HTMLElement): void {
     syncStreetViewToggle();
     syncStreetViewLayout(container);
   });
+}
+
+function bindSearchControl(container: HTMLElement): void {
+  if (!state.map) {
+    return;
+  }
+
+  const control = document.createElement('div');
+  control.className = 'bb-map-search-control';
+
+  const box = document.createElement('form');
+  box.className = 'bb-map-search-box';
+  box.setAttribute('role', 'search');
+  box.noValidate = true;
+
+  const toggle = document.createElement('button');
+  toggle.type = 'button';
+  toggle.className = 'bb-map-search-toggle';
+  toggle.setAttribute('aria-label', strings.search);
+  toggle.title = strings.search;
+  toggle.innerHTML = searchIconMarkup();
+
+  const input = document.createElement('input');
+  input.type = 'search';
+  input.className = 'bb-map-search-input';
+  input.name = 'map_search';
+  input.placeholder = strings.searchPlaceholder;
+  input.autocomplete = 'off';
+  input.setAttribute('aria-label', strings.searchPlaceholder);
+
+  const clear = document.createElement('button');
+  clear.type = 'button';
+  clear.className = 'bb-map-search-clear';
+  clear.setAttribute('aria-label', strings.searchClear);
+  clear.title = strings.searchClear;
+  clear.textContent = '×';
+
+  const feedback = document.createElement('p');
+  feedback.className = 'bb-map-search-feedback';
+  feedback.setAttribute('role', 'status');
+  feedback.setAttribute('aria-live', 'polite');
+  feedback.hidden = true;
+
+  box.append(toggle, input, clear);
+  control.append(box, feedback);
+
+  const expand = (): void => {
+    control.classList.add('is-expanded');
+    window.setTimeout(() => input.focus(), 0);
+  };
+
+  const collapse = (): void => {
+    control.classList.remove('is-expanded');
+    setSearchFeedback(feedback, '', null);
+  };
+
+  toggle.addEventListener('click', () => {
+    if (!control.classList.contains('is-expanded')) {
+      expand();
+      return;
+    }
+
+    if (input.value.trim() !== '') {
+      void runMapSearch(container, feedback, input.value);
+      return;
+    }
+
+    collapse();
+  });
+
+  clear.addEventListener('click', () => {
+    input.value = '';
+    setSearchFeedback(feedback, '', null);
+    input.focus();
+  });
+
+  box.addEventListener('submit', (event) => {
+    event.preventDefault();
+
+    if (!control.classList.contains('is-expanded')) {
+      expand();
+      return;
+    }
+
+    void runMapSearch(container, feedback, input.value);
+  });
+
+  input.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape') {
+      event.preventDefault();
+      collapse();
+      toggle.focus();
+    }
+  });
+
+  for (const eventName of ['mousedown', 'touchstart', 'pointerdown', 'dblclick', 'wheel', 'contextmenu'] as const) {
+    control.addEventListener(eventName, (event) => event.stopPropagation());
+  }
+
+  control.addEventListener('click', (event) => event.stopPropagation());
+
+  document.addEventListener('click', () => {
+    if (control.classList.contains('is-expanded') && input.value.trim() === '') {
+      collapse();
+    }
+  });
+
+  state.map.controls[google.maps.ControlPosition.TOP_RIGHT].push(control);
+}
+
+async function runMapSearch(
+  container: HTMLElement,
+  feedback: HTMLElement,
+  query: string,
+): Promise<void> {
+  const term = query.trim();
+
+  if (term === '' || !state.map) {
+    return;
+  }
+
+  setSearchFeedback(feedback, strings.searchLoading, 'loading');
+
+  const params = new URLSearchParams();
+  const mediaSelect = container.querySelector<HTMLSelectElement>('.bb-map-filters select[name="media_type"]');
+
+  if (mediaSelect && mediaSelect.value.trim() !== '') {
+    params.set('media_type', mediaSelect.value.trim());
+  }
+
+  params.set('search', term);
+  params.set('page', '1');
+  params.set('per_page', '50');
+
+  try {
+    const payload = await fetchJson<AdSpacesPayload>(`${config.apiBase}/ad-spaces?${params.toString()}`);
+    const results = payload.data.filter((adSpace) => (
+      Number.isFinite(Number(adSpace.latitude)) && Number.isFinite(Number(adSpace.longitude))
+    ));
+
+    if (results.length === 0) {
+      setSearchFeedback(feedback, strings.searchEmpty, 'empty');
+      return;
+    }
+
+    for (const adSpace of results) {
+      state.detailsCache.set(adSpace.id, adSpace);
+    }
+
+    exitStreetView(container);
+    state.selectionPage = 1;
+    setSearchFeedback(feedback, '', null);
+
+    if (results.length === 1) {
+      await focusAdSpace(results[0]);
+      return;
+    }
+
+    const bounds = new google.maps.LatLngBounds();
+
+    for (const adSpace of results) {
+      bounds.extend({ lat: Number(adSpace.latitude), lng: Number(adSpace.longitude) });
+    }
+
+    if (!bounds.isEmpty()) {
+      state.map.fitBounds(bounds, 64);
+    }
+  } catch (error) {
+    console.error('Map search failed.', error);
+    setSearchFeedback(feedback, strings.error, 'error');
+  }
+}
+
+function setSearchFeedback(
+  node: HTMLElement,
+  message: string,
+  mode: 'loading' | 'empty' | 'error' | null,
+): void {
+  if (message === '' || mode === null) {
+    node.hidden = true;
+    node.textContent = '';
+    delete node.dataset.state;
+    return;
+  }
+
+  node.hidden = false;
+  node.textContent = message;
+  node.dataset.state = mode;
+}
+
+function searchIconMarkup(): string {
+  return `
+    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+      <circle cx="11" cy="11" r="7"></circle>
+      <line x1="16.5" y1="16.5" x2="21" y2="21"></line>
+    </svg>
+  `;
+}
+
+function resetAllFilters(container: HTMLElement): void {
+  const mediaSelect = container.querySelector<HTMLSelectElement>('select[name="media_type"]');
+
+  if (mediaSelect && container.dataset.lockMediaType !== 'true') {
+    mediaSelect.value = '';
+  }
+
+  state.selectionPage = 1;
+  syncMediaFilterPills(container);
+  exitStreetView(container);
+
+  if (state.map) {
+    state.map.setCenter(config.defaultCenter);
+    state.map.setZoom(config.defaultZoom);
+  }
+
+  void refreshPoints(container, { includeBounds: true, fitToResults: false });
+}
+
+function renderStatusActions(status: HTMLElement, mode: 'empty' | 'error'): void {
+  const actions = mode === 'error'
+    ? [{ label: strings.retry, action: 'retry' }]
+    : [
+        { label: strings.resetFilters, action: 'reset-filters' },
+        { label: strings.zoomOut, action: 'zoom-out' },
+      ];
+
+  const wrap = document.createElement('div');
+  wrap.className = 'bb-map-status-actions';
+  wrap.innerHTML = actions
+    .map((item) => `<button type="button" class="bb-map-status-action" data-status-action="${item.action}">${escapeHtml(item.label)}</button>`)
+    .join('');
+  status.append(wrap);
+}
+
+function skeletonCards(count: number): string {
+  return Array.from({ length: count }, () => `
+    <article class="bb-map-result-card bb-map-result-skeleton" aria-hidden="true">
+      <span class="bb-map-skeleton-media"></span>
+      <div class="bb-map-result-body">
+        <span class="bb-map-skeleton-line"></span>
+        <span class="bb-map-skeleton-line is-short"></span>
+        <span class="bb-map-skeleton-line is-tiny"></span>
+      </div>
+    </article>
+  `).join('');
 }
 
 function resetMapViewForFilterChange(container: HTMLElement): boolean {
@@ -1006,6 +1373,7 @@ async function refreshPoints(
 
     console.error('Unable to load map points.', error);
     setStatus(status, strings.error, 'error');
+    renderStatusActions(status, 'error');
     return;
   } finally {
     if (state.mapRequestController === controller) {
@@ -1025,6 +1393,7 @@ async function refreshPoints(
   if (state.items.length === 0) {
     updateMapSummary(container, strings.empty);
     setStatus(status, strings.empty, 'empty');
+    renderStatusActions(status, 'empty');
     return;
   }
 
@@ -1177,8 +1546,10 @@ function hideSelectionResults(container: HTMLElement): void {
 
   if (results) {
     results.hidden = true;
-    results.classList.remove('is-visible', 'is-loading');
+    results.classList.remove('is-visible', 'is-loading', 'is-mobile-expanded');
   }
+
+  setSelectionExpanded(container, false);
 
   if (head) {
     head.textContent = 'Priblížte mapu pre výber plôch v aktuálnej oblasti.';
@@ -1201,7 +1572,7 @@ function showSelectionLoading(container: HTMLElement): void {
   list.setAttribute('aria-busy', 'true');
 
   if (!keepCurrentList) {
-    list.innerHTML = '<div class="bb-map-results-loading">Načítavam...</div>';
+    list.innerHTML = skeletonCards(3);
   }
 }
 
@@ -1224,7 +1595,7 @@ function renderSelectionCards(container: HTMLElement, payload: AdSpacesPayload):
     return;
   }
 
-  head.textContent = `${total} plôch v aktuálnej oblasti. Zobrazené ${payload.data.length} z ${selectionPageSize}.`;
+  head.textContent = `${total} plôch v aktuálnej oblasti.`;
 
   for (const adSpace of payload.data) {
     state.detailsCache.set(adSpace.id, adSpace);
@@ -1582,6 +1953,7 @@ function pointGroupMarkerSpec(group: CoordinateMarkerGroup, mode: RenderMode): M
         gmpClickable: true,
       }) as BillboardyMarker;
       marker.__billboardyMediaType = mediaType;
+      marker.__billboardyPointIds = group.points.map((point) => point.id);
       marker.addEventListener('gmp-click', () => {
         if (group.points.length > 1) {
           openCoordinateGroup(group, marker);
@@ -1591,10 +1963,18 @@ function pointGroupMarkerSpec(group: CoordinateMarkerGroup, mode: RenderMode): M
         void openPoint(group.point, marker);
       });
 
+      const element = markerElement(marker);
+
+      if (element) {
+        element.addEventListener('mouseenter', () => highlightCardsForMarker(marker, true));
+        element.addEventListener('mouseleave', () => highlightCardsForMarker(marker, false));
+      }
+
       return marker;
     },
     bind: (marker) => {
       marker.__billboardyMediaType = mediaType;
+      marker.__billboardyPointIds = group.points.map((point) => point.id);
 
       for (const point of group.points) {
         state.markerById.set(point.id, marker);
@@ -1606,6 +1986,50 @@ function pointGroupMarkerSpec(group: CoordinateMarkerGroup, mode: RenderMode): M
 
 function setMarkerMap(marker: BillboardyMarker, map: google.maps.Map | null): void {
   marker.map = map;
+}
+
+function markerElement(marker: BillboardyMarker): HTMLElement | null {
+  const node = marker.content;
+
+  return node instanceof HTMLElement ? node : null;
+}
+
+function setActiveMarker(marker: BillboardyMarker | null): void {
+  const previous = state.activeMarker;
+
+  if (previous && previous !== marker) {
+    markerElement(previous)?.classList.remove('is-active');
+  }
+
+  state.activeMarker = marker;
+
+  if (marker) {
+    markerElement(marker)?.classList.add('is-active');
+  }
+}
+
+function highlightMarkerForCard(id: string, on: boolean): void {
+  const marker = state.markerById.get(id);
+
+  if (!marker) {
+    return;
+  }
+
+  markerElement(marker)?.classList.toggle('is-hover', on);
+  marker.zIndex = on ? 1200 : null;
+}
+
+function highlightCardsForMarker(marker: BillboardyMarker, on: boolean): void {
+  const list = root?.querySelector<HTMLElement>('.bb-map-results-list');
+
+  if (!list) {
+    return;
+  }
+
+  for (const id of marker.__billboardyPointIds ?? []) {
+    const card = list.querySelector<HTMLElement>(`[data-card-id="${CSS.escape(id)}"]`);
+    card?.classList.toggle('is-highlight', on);
+  }
 }
 
 function groupPointsByCoordinate(points: MapPoint[]): CoordinateMarkerGroup[] {
@@ -1690,6 +2114,7 @@ async function openPoint(point: MapPoint, marker: BillboardyMarker, forceSingle 
   }
 
   state.infoWindow.setContent(popupLoading(point));
+  setActiveMarker(marker);
   state.infoWindow.open({ anchor: marker, map: state.map });
 
   try {
@@ -1707,6 +2132,7 @@ function openCoordinateGroup(group: CoordinateMarkerGroup, marker: BillboardyMar
   }
 
   state.infoWindow.setContent(coordinateGroupPopup(group));
+  setActiveMarker(marker);
   state.infoWindow.open({ anchor: marker, map: state.map });
 }
 

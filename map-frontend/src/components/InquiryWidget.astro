@@ -7,7 +7,7 @@ const apiBase = import.meta.env.PUBLIC_BILLBOARDY_API_BASE ?? "/wp-json/billboar
 <div class="bb-inquiry-widget" data-inquiry-widget data-api-base={apiBase}>
 	<div class="bb-inquiry-bar" data-inquiry-bar hidden>
 		<button class="bb-inquiry-bubble" type="button" data-inquiry-open aria-haspopup="dialog">
-			<span data-inquiry-count>0</span>
+			<span data-inquiry-count aria-live="polite" aria-atomic="true">0</span>
 			<strong>Odoslať dopyt</strong>
 		</button>
 	</div>
