@@ -1,5 +1,6 @@
 ---
 import { Icon } from 'astro-icon/components';
+import { CONTACT_EMAIL, CONTACT_PHONE_DISPLAY, CONTACT_PHONE_TEL } from '../data/site';
 
 interface TeamMember {
   name: string;
@@ -14,64 +15,64 @@ const TEAM: TeamMember[] = [
   {
     name: "Andrej Klíma",
     role: "CEO",
-    email: "obchod@kpkreklama.sk",
-    phone: "+421 917 930 494",
+    email: CONTACT_EMAIL,
+    phone: CONTACT_PHONE_DISPLAY,
     photo: "../../team/Andrej-KLIMA.webp",
     roleColor: "#D80B17",
   },
   {
     name: "Radoslav Sokol",
     role: "COO / Head of Sale",
-    email: "obchod@kpkreklama.sk",
-    phone: "+421 917 930 494",
+    email: CONTACT_EMAIL,
+    phone: CONTACT_PHONE_DISPLAY,
     photo: "../../team/sokol.webp",
     roleColor: "#106EBE",
   },
   {
     name: "Ingrid Tereščiková",
     role: "Key Account Manager",
-    email: "obchod@kpkreklama.sk",
-    phone: "+421 917 930 494",
+    email: CONTACT_EMAIL,
+    phone: CONTACT_PHONE_DISPLAY,
     photo: "../../team/ingrid.webp",   
     roleColor: "#106EBE",
   },
   {
     name: "Kanócz Péter",
     role: "Key Account Manager",
-    email: "obchod@kpkreklama.sk",
-    phone: "+421 917 930 494",
+    email: CONTACT_EMAIL,
+    phone: CONTACT_PHONE_DISPLAY,
     photo: "../../team/kanocz.webp",   
     roleColor: "#106EBE",
   },
   {
     name: "Monika Juhászová",
     role: "Front Office / Customer Service",
-    email: "obchod@kpkreklama.sk",
-    phone: "+421 917 930 494",
+    email: CONTACT_EMAIL,
+    phone: CONTACT_PHONE_DISPLAY,
     photo: "../team/monika.webp",   
     roleColor: "#D80B17",
   },
   {
     name: "Milan Ďuroň",
     role: "Production / Store Manager",
-    email: "obchod@kpkreklama.sk",
-    phone: "+421 917 930 494",
+    email: CONTACT_EMAIL,
+    phone: CONTACT_PHONE_DISPLAY,
     photo: "../../team/milan.webp",   
     roleColor: "#0F8B5F",
   },
   {
     name: "Tatiana Konečná",
     role: "Production Manager",
-    email: "obchod@kpkreklama.sk",
-    phone: "+421 917 930 494",
+    email: CONTACT_EMAIL,
+    phone: CONTACT_PHONE_DISPLAY,
     photo: "../../team/tatiana.webp",   
     roleColor: "#0F8B5F",
   },
   {
     name: "Dagmar Tereščiková",
     role: "Invoicing / Happiness Manager",
-    email: "obchod@kpkreklama.sk",
-    phone: "+421 917 930 494",
+    email: CONTACT_EMAIL,
+    phone: CONTACT_PHONE_DISPLAY,
     photo: "../../team/dagmar.webp",   
     roleColor: "#106EBE",
   },
@@ -131,7 +132,7 @@ const TEAM: TeamMember[] = [
             </a>
 
             <a
-              href={`tel:${member.phone.replace(/\s/g, "")}`}
+              href={`tel:${CONTACT_PHONE_TEL}`}
               class="flex items-center gap-2 text-xs text-gray-500 hover:text-bb-focus transition-colors"
               style="font-weight:500;"
             >

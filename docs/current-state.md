@@ -34,7 +34,7 @@
 - Есть отдельный Astro проект с Tailwind.
 - Карта работает через Google Maps JavaScript API.
 - Есть фильтры, список объектов в текущей области, popup карточка и CTA.
-- Добавлены базовые SEO-теги, canonical URL, Open Graph/Twitter Card, JSON-LD, а также static generation для `robots.txt` и `sitemap.xml`.
+- Добавлены базовые SEO-теги, canonical URL, Open Graph/Twitter Card, расширенный JSON-LD `@graph` (`Organization`, `WebSite`, `Service`/`OfferCatalog`), а также static generation для `robots.txt`, `/llms.txt` и `sitemap.xml`; `robots.txt` объявляет Content Signals `ai-train=no, search=yes, ai-input=yes`.
 - Есть переключение в Street View с поиска ближайшей панорамы от центра карты или выбранной плоскости; список текущей области в этом режиме скрывается, а смена типа или региона возвращает обычную карту с более широким обзором.
 - Есть поиск по карте (control с лупой, `TOP_RIGHT`), взаимная подсветка карточки и маркера при наведении, активное состояние открытого маркера, skeleton-карточки при загрузке списка, а также полезные пустые/ошибочные состояния с кнопками действий.
 - Dopyt-modal имеет focus-trap, закрытие по Escape, возврат фокуса и `aria-live` счётчик выбранных плоскостей.

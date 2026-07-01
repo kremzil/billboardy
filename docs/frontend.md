@@ -17,6 +17,7 @@ Frontend находится в `map-frontend/` и реализован как о
 - `map-frontend/src/pages/typ/[slug].astro`
 - `map-frontend/src/data/site.ts`
 - `map-frontend/src/pages/robots.txt.ts`
+- `map-frontend/src/pages/llms.txt.ts`
 - `map-frontend/src/pages/sitemap.xml.ts`
 
 `index.astro` — основная страница приложения. На главной подключаются hero, блок цен и секция карты.
@@ -86,13 +87,17 @@ Footer содержит ссылки на словацкие kraje вместо 
 - `map-frontend/.env.example`
 - `map-frontend/astro.config.mjs`
 
-Тут определяются runtime/build настройки, которые не стоит зашивать в код.
+Тут определяются runtime/build настройки, которые не стоит зашивать в код. `PUBLIC_GTM_ID` задаёт Google Tag Manager container для конкретного окружения; если переменная пустая, GTM не рендерится.
 
 ### SEO
 
 - `src/layouts/layout.astro` формирует базовые meta tags: `title`, `description`, `robots`, canonical URL, Open Graph, Twitter Card и JSON-LD `WebSite`.
-- `src/data/site.ts` хранит site origin, дефолтные SEO-тексты и helpers для абсолютных URL с учётом Astro `base: "/mapa/"`.
-- `src/pages/robots.txt.ts` генерирует `robots.txt` при static build.
+- JSON-LD в `src/layouts/layout.astro` построен как `@graph`: `Organization`, `WebSite` и `Service` с `OfferCatalog` основных рекламных форматов.
+- Layout также публикует ссылку на agent-context файл через `<link rel="alternate" type="text/markdown" href="/llms.txt">`.
+- `src/layouts/layout.astro` подключает Google Tag Manager глобально для всех страниц, если задан `PUBLIC_GTM_ID`: скрипт в `<head>` и `noscript` iframe сразу в `<body>`.
+- `src/data/site.ts` хранит site origin, дефолтные SEO-тексты, общие контактные данные, `PUBLIC_GTM_ID` и helpers для абсолютных URL с учётом Astro `base: "/mapa/"`.
+- `src/pages/robots.txt.ts` генерирует `robots.txt` при static build и объявляет Content Signals для AI-использования: `ai-train=no, search=yes, ai-input=yes`.
+- `src/pages/llms.txt.ts` генерирует `/llms.txt` в формате `text/markdown`: краткое описание сайта для агентов, важные страницы, публичные GET endpoints карты и ограничения по не-публичным административным маршрутам.
 - `src/pages/sitemap.xml.ts` генерирует sitemap для главной страницы, контакта, GDPR/Cookies и страниц типов носителей.
 - Для production-домена используется `PUBLIC_SITE_URL`; по умолчанию он равен `https://www.billboardy.sk`.
 

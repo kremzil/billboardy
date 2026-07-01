@@ -3,7 +3,18 @@ import '../styles/global.css';
 import Header from '../components/header.astro';
 import InquiryWidget from '../components/InquiryWidget.astro';
 import Footer from '../components/footer.astro';
-import { absoluteUrl, DEFAULT_DESCRIPTION, DEFAULT_OG_IMAGE, DEFAULT_TITLE, SITE_NAME, withBasePath } from '../data/site';
+import { AD_TYPE_SLUGS, TYPE_CONTENT } from '../data/adTypes';
+import {
+	absoluteUrl,
+	CONTACT_EMAIL,
+	CONTACT_PHONE_TEL,
+	DEFAULT_DESCRIPTION,
+	DEFAULT_OG_IMAGE,
+	DEFAULT_TITLE,
+	GTM_ID,
+	SITE_NAME,
+	withBasePath,
+} from '../data/site';
 
 type Props = {
 	title?: string;
@@ -29,24 +40,88 @@ const ogImageUrl = absoluteUrl(image);
 const faviconSvg = withBasePath("favicon.svg");
 const faviconPng = withBasePath("favicon.png");
 const robotsContent = noindex ? "noindex, nofollow" : "index, follow";
+const organizationId = absoluteUrl("/#organization");
+const websiteId = absoluteUrl("/#website");
+const serviceId = absoluteUrl("/#outdoor-advertising-service");
+const offerCatalogId = absoluteUrl("/#advertising-format-catalog");
+const llmsTxtUrl = absoluteUrl("llms.txt");
+const gtmScript = GTM_ID ? `(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+})(window,document,'script','dataLayer',${JSON.stringify(GTM_ID)});` : "";
+const gtmNoscriptUrl = GTM_ID ? `https://www.googletagmanager.com/ns.html?id=${encodeURIComponent(GTM_ID)}` : "";
+const advertisingFormatOffers = AD_TYPE_SLUGS.map((slug) => ({
+	"@type": "Offer",
+	itemOffered: {
+		"@type": "Service",
+		name: TYPE_CONTENT[slug].title,
+	},
+	url: absoluteUrl(`/typ/${slug}/`),
+}));
 const structuredData = {
 	"@context": "https://schema.org",
-	"@type": "WebSite",
-	name: SITE_NAME,
-	url: absoluteUrl("/"),
-	inLanguage: "sk-SK",
-	publisher: {
-		"@type": "Organization",
-		name: SITE_NAME,
-		url: absoluteUrl("/"),
-		logo: absoluteUrl("/favicon.svg"),
-	},
+	"@graph": [
+		{
+			"@type": "Organization",
+			"@id": organizationId,
+			name: SITE_NAME,
+			url: absoluteUrl("/"),
+			logo: absoluteUrl("/favicon.svg"),
+			contactPoint: {
+				"@type": "ContactPoint",
+				telephone: CONTACT_PHONE_TEL,
+				email: CONTACT_EMAIL,
+				contactType: "sales",
+				areaServed: "SK",
+				availableLanguage: ["sk", "cs"],
+			},
+		},
+		{
+			"@type": "WebSite",
+			"@id": websiteId,
+			name: SITE_NAME,
+			url: absoluteUrl("/"),
+			description: DEFAULT_DESCRIPTION,
+			inLanguage: "sk-SK",
+			publisher: { "@id": organizationId },
+		},
+		{
+			"@type": "Service",
+			"@id": serviceId,
+			name: "Prenájom vonkajších reklamných plôch",
+			serviceType: "Vonkajšia reklama",
+			description: DEFAULT_DESCRIPTION,
+			provider: { "@id": organizationId },
+			areaServed: {
+				"@type": "Country",
+				name: "Slovensko",
+			},
+			availableChannel: {
+				"@type": "ServiceChannel",
+				serviceUrl: absoluteUrl("/kontakt/"),
+			},
+			hasOfferCatalog: {
+				"@type": "OfferCatalog",
+				"@id": offerCatalogId,
+				name: "Typy reklamných plôch",
+				itemListElement: advertisingFormatOffers,
+			},
+		},
+	],
 };
 ---
 
 <html lang="sk">
 	<head>
 		<meta charset="utf-8" />
+		{GTM_ID && (
+			<>
+				<!-- Google Tag Manager -->
+				<script is:inline set:html={gtmScript} />
+				<!-- End Google Tag Manager -->
+			</>
+		)}
 		<link rel="icon" type="image/svg+xml" href={faviconSvg} />
 		<link rel="alternate icon" type="image/png" href={faviconPng} />
 		<link rel="apple-touch-icon" href={faviconPng} />
@@ -55,6 +130,7 @@ const structuredData = {
 		<meta name="description" content={description} />
 		<meta name="robots" content={robotsContent} />
 		<link rel="canonical" href={canonicalUrl} />
+		<link rel="alternate" type="text/markdown" href={llmsTxtUrl} title="LLMs context" />
 		<meta property="og:locale" content="sk_SK" />
 		<meta property="og:site_name" content={SITE_NAME} />
 		<meta property="og:type" content="website" />
@@ -72,6 +148,15 @@ const structuredData = {
 	</head>
 
 	<body class="min-h-screen bg-bb-surface text-bb-ink">
+		{GTM_ID && (
+			<>
+				<!-- Google Tag Manager (noscript) -->
+				<noscript>
+					<iframe src={gtmNoscriptUrl} height="0" width="0" style="display:none;visibility:hidden"></iframe>
+				</noscript>
+				<!-- End Google Tag Manager (noscript) -->
+			</>
+		)}
 		<Header />
 		<InquiryWidget />
 			<main>

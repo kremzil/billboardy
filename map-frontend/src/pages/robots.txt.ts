@@ -7,6 +7,7 @@ export function GET() {
 	const body = [
 		"User-agent: *",
 		`Allow: ${basePath}`,
+		"Content-Signal: ai-train=no, search=yes, ai-input=yes",
 		"",
 		`Sitemap: ${absoluteUrl("sitemap.xml")}`,
 		"",

@@ -1,6 +1,7 @@
 ---
 import { Icon } from 'astro-icon/components'
 import { AD_TYPE_SLUGS, SLUG_TO_TYPE } from '../data/adTypes'
+import { CONTACT_EMAIL, CONTACT_PHONE_DISPLAY, CONTACT_PHONE_TEL } from '../data/site'
 
 const basePath = import.meta.env.BASE_URL;
 const plochy = AD_TYPE_SLUGS.map((slug) => ({ label: SLUG_TO_TYPE[slug], href: `${basePath}typ/${slug}/` }));
@@ -70,19 +71,19 @@ const gdpr = `${basePath}gdprcookies`;
 				<h4 class="text-white font-bold text-[15px] mb-4">Kontakt</h4>
 				<ul class="flex flex-col gap-3">
 					<li>
-						<a href="tel:+421917930494" class="flex items-center gap-2.5 text-gray-400 hover:text-white text-sm transition-colors duration-200">
+						<a href={`tel:${CONTACT_PHONE_TEL}`} class="flex items-center gap-2.5 text-gray-400 hover:text-white text-sm transition-colors duration-200">
 							<span class="contact-icon w-8 h-8 rounded-lg flex items-center justify-center shrink-0">
 								<Icon name="lucide:phone" width="14" height="14" />
 							</span>
-							+421 917 930 494
+							{CONTACT_PHONE_DISPLAY}
 						</a>
 					</li>
 					<li>
-						<a href="mailto:obchod@kpkreklama.sk" class="flex items-center gap-2.5 text-gray-400 hover:text-white text-sm transition-colors duration-200">
+						<a href={`mailto:${CONTACT_EMAIL}`} class="flex items-center gap-2.5 text-gray-400 hover:text-white text-sm transition-colors duration-200">
 							<span class="contact-icon w-8 h-8 rounded-lg flex items-center justify-center shrink-0">
 								<Icon name="lucide:mail" width="14" height="14" />
 							</span>
-							obchod@kpkreklama.sk
+							{CONTACT_EMAIL}
 						</a>
 					</li>
 					<li>
