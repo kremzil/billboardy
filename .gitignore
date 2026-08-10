@@ -26,3 +26,5 @@ Thumbs.db
 .idea/
 .vscode/
 
+# Superpowers execution ledgers and review packages
+.superpowers/
