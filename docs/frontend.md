@@ -134,7 +134,7 @@ npm run check
 npm run build
 ```
 
-Node-тесты `mhdAdvertising.test.ts` и `mhdAdvertisingPage.test.ts` проверяют соответственно расчёт цен каталога и контракт MHD-страницы. Запускайте их вместе с остальными тестами командой `npm test`.
+Node-тесты `map-frontend/src/data/mhdAdvertising.test.ts` и `map-frontend/src/data/mhdAdvertisingPage.test.ts` проверяют соответственно расчёт цен каталога и контракт MHD-страницы. Запускайте их вместе с остальными тестами командой `npm test`.
 
 ## Build-артефакты
 
