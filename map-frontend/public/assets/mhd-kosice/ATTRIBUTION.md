@@ -13,5 +13,7 @@ Tieto grafiky sú dočasné podklady pre stránku reklamy v MHD Košice.
 
 Schémy vozidiel a verejného osvetlenia sú vytvorené ako lokálne výrezy z oficiálnych podkladov DPMK. Zachovávajú zvýraznené modro-žlté reklamné plochy a sú dočasné, kým nebudú dodané náhradné grafiky.
 
+V súbore `public-lighting.webp` sú pôvodné číselné ceny prekryté neutrálnymi prvkami, aby dočasný vizuál nekolidoval s aktuálnymi cenami na stránke.
+
 - [Cenník reklamných plôch 6/2026](https://www.dpmk.sk/sites/default/files/images/reklama/Cenn%C3%ADk%20reklamn%C3%BDch%20pl%C3%B4ch%206_2026.pdf)
 - [Cenník prenájmu verejného a trakčného osvetlenia, platný od 01.04.2026](https://www.dpmk.sk/sites/default/files/images/reklama/Cenn%C3%ADk%20pren%C3%A1jmu%20verejn%C3%A9ho%20a%20trak%C4%8Dn%C3%A9ho%20osvetlenia%20platn%C3%BD%20k%2001.04.2026.pdf)
