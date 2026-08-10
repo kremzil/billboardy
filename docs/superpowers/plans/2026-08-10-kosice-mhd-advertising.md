@@ -27,7 +27,7 @@
 - `map-frontend/src/data/mhdAdvertising.test.ts`: unit tests for discount rounding and catalog completeness.
 - `map-frontend/src/components/MhdOfferCard.astro`: one accessible vehicle-format card with image, dimensions, price table, polep price and CTA.
 - `map-frontend/src/pages/reklama-na-mhd-kosice.astro`: hero, benefits, bus/tram catalogs, public-lighting tables, pricing note and final CTA.
-- `map-frontend/src/pages/mhdAdvertisingPage.test.ts`: built-output contract for route, copy, SEO, all formats, navigation and sitemap.
+- `map-frontend/src/data/mhdAdvertisingPage.test.ts`: built-output contract for route, copy, SEO, all formats, navigation and sitemap. It stays outside `src/pages` so Astro never treats it as a public route.
 - `map-frontend/src/components/header.astro`: desktop/mobile menu link to the new page and active state.
 - `map-frontend/src/pages/sitemap.xml.ts`: static route entry.
 - `map-frontend/public/assets/mhd-kosice/*`: local hero and temporary PDF-derived diagrams.
@@ -55,7 +55,7 @@
 Add to `package.json`:
 
 ```json
-"test": "node --test --experimental-strip-types src/data/mhdAdvertising.test.ts src/pages/mhdAdvertisingPage.test.ts"
+"test": "node --test --experimental-strip-types src/data/mhdAdvertising.test.ts src/data/mhdAdvertisingPage.test.ts"
 ```
 
 Start `mhdAdvertising.test.ts` with real behavior assertions:
@@ -173,7 +173,7 @@ git commit -m "Add temporary Košice MHD advertising imagery"
 ### Task 3: Static Page, Navigation and Sitemap
 
 **Files:**
-- Create: `map-frontend/src/pages/mhdAdvertisingPage.test.ts`
+- Create: `map-frontend/src/data/mhdAdvertisingPage.test.ts`
 - Create: `map-frontend/src/components/MhdOfferCard.astro`
 - Create: `map-frontend/src/pages/reklama-na-mhd-kosice.astro`
 - Modify: `map-frontend/src/components/header.astro`
@@ -206,7 +206,7 @@ assert.match(sitemap, /reklama-na-mhd-kosice\//);
 
 - [ ] **Step 2: Run the page contract and confirm RED**
 
-Run: `npm run build; node --test --experimental-strip-types src/pages/mhdAdvertisingPage.test.ts`
+Run: `npm run build; node --test --experimental-strip-types src/data/mhdAdvertisingPage.test.ts`
 
 Expected: FAIL because the route HTML does not exist.
 
@@ -226,14 +226,14 @@ Add `{ label: "MHD Košice", href: `${basePath}reklama-na-mhd-kosice/` }` to the
 
 Run: `npm run build`
 
-Then: `node --test --experimental-strip-types src/pages/mhdAdvertisingPage.test.ts`
+Then: `node --test --experimental-strip-types src/data/mhdAdvertisingPage.test.ts`
 
 Expected: page contract passes, including route copy, canonical URL and sitemap entry.
 
 - [ ] **Step 7: Commit the page**
 
 ```powershell
-git add -- map-frontend/src/components/MhdOfferCard.astro map-frontend/src/pages/reklama-na-mhd-kosice.astro map-frontend/src/pages/mhdAdvertisingPage.test.ts map-frontend/src/components/header.astro map-frontend/src/pages/sitemap.xml.ts
+git add -- map-frontend/package.json map-frontend/src/components/MhdOfferCard.astro map-frontend/src/pages/reklama-na-mhd-kosice.astro map-frontend/src/data/mhdAdvertisingPage.test.ts map-frontend/src/components/header.astro map-frontend/src/pages/sitemap.xml.ts
 git commit -m "Add Košice MHD advertising page"
 ```
 
