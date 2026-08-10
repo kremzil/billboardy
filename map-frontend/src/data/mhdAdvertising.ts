@@ -32,7 +32,7 @@ export const BUS_OFFERS: VehicleOffer[] = [
   {
     slug: "celoplosny-polep-kratky-autobus",
     title: "Celoplošný polep — krátky autobus",
-    image: "/assets/mhd-kosice/celoplosny-polep-kratky-autobus.jpg",
+    image: "/assets/mhd-kosice/celoplosny-polep-kratky-autobus.webp",
     imageAlt: "Celoplošný polep krátkeho autobusu v Košiciach",
     prices: [
       { period: "1 mesiac", sourcePrice: 720 },
@@ -44,7 +44,7 @@ export const BUS_OFFERS: VehicleOffer[] = [
   {
     slug: "celoplosny-polep-dlhy-autobus",
     title: "Celoplošný polep — dlhý autobus",
-    image: "/assets/mhd-kosice/celoplosny-polep-dlhy-autobus.jpg",
+    image: "/assets/mhd-kosice/celoplosny-polep-dlhy-autobus.webp",
     imageAlt: "Celoplošný polep dlhého autobusu v Košiciach",
     prices: [
       { period: "1 mesiac", sourcePrice: 820 },
@@ -57,7 +57,7 @@ export const BUS_OFFERS: VehicleOffer[] = [
     slug: "busboard-xxl",
     title: "Busboard XXL",
     size: "do 386 × 210 cm",
-    image: "/assets/mhd-kosice/busboard-xxl.jpg",
+    image: "/assets/mhd-kosice/busboard-xxl.webp",
     imageAlt: "Reklamná plocha Busboard XXL na autobuse",
     prices: [
       { period: "1 mesiac", sourcePrice: 450 },
@@ -70,7 +70,7 @@ export const BUS_OFFERS: VehicleOffer[] = [
     slug: "busboard-xl",
     title: "Busboard XL",
     size: "do 255 × 210 cm",
-    image: "/assets/mhd-kosice/busboard-xl.jpg",
+    image: "/assets/mhd-kosice/busboard-xl.webp",
     imageAlt: "Reklamná plocha Busboard XL na autobuse",
     prices: [
       { period: "1 mesiac", sourcePrice: 370 },
@@ -83,7 +83,7 @@ export const BUS_OFFERS: VehicleOffer[] = [
     slug: "busboard-l",
     title: "Busboard L",
     size: "do 127 × 210 cm",
-    image: "/assets/mhd-kosice/busboard-l.jpg",
+    image: "/assets/mhd-kosice/busboard-l.webp",
     imageAlt: "Reklamná plocha Busboard L na autobuse",
     prices: [
       { period: "1 mesiac", sourcePrice: 180 },
@@ -96,7 +96,7 @@ export const BUS_OFFERS: VehicleOffer[] = [
     slug: "doorboard",
     title: "Doorboard",
     size: "podľa typu vozidla",
-    image: "/assets/mhd-kosice/doorboard.jpg",
+    image: "/assets/mhd-kosice/doorboard.webp",
     imageAlt: "Reklamná plocha Doorboard na autobuse",
     prices: [
       { period: "1 mesiac", sourcePrice: 180 },
@@ -109,7 +109,7 @@ export const BUS_OFFERS: VehicleOffer[] = [
     slug: "bocna-samolepka-220x60",
     title: "Bočná samolepka",
     size: "do 220 × 60 cm (1,32 m²)",
-    image: "/assets/mhd-kosice/bocna-samolepka-220x60.jpg",
+    image: "/assets/mhd-kosice/bocna-samolepka-220x60.webp",
     imageAlt: "Bočná reklamná samolepka na autobuse",
     note: oneVisionNote,
     prices: [
@@ -124,7 +124,7 @@ export const BUS_OFFERS: VehicleOffer[] = [
     slug: "bocna-samolepka-150x30",
     title: "Bočná samolepka",
     size: "do 150 × 30 cm (0,45 m²)",
-    image: "/assets/mhd-kosice/bocna-samolepka-150x30.jpg",
+    image: "/assets/mhd-kosice/bocna-samolepka-150x30.webp",
     imageAlt: "Bočná reklamná samolepka na autobuse",
     note: oneVisionNote,
     prices: [
@@ -139,7 +139,7 @@ export const BUS_OFFERS: VehicleOffer[] = [
     slug: "bocna-samolepka-130x30",
     title: "Bočná samolepka",
     size: "do 130 × 30 cm (0,39 m²)",
-    image: "/assets/mhd-kosice/bocna-samolepka-130x30.jpg",
+    image: "/assets/mhd-kosice/bocna-samolepka-130x30.webp",
     imageAlt: "Bočná reklamná samolepka na autobuse",
     note: oneVisionNote,
     prices: [{ period: "1 mesiac", sourcePrice: 30 }],
@@ -147,7 +147,7 @@ export const BUS_OFFERS: VehicleOffer[] = [
   {
     slug: "zadna-plocha-okno",
     title: "Zadná plocha — okno",
-    image: "/assets/mhd-kosice/zadna-plocha-okno.jpg",
+    image: "/assets/mhd-kosice/zadna-plocha-okno.webp",
     imageAlt: "Zadná okenná reklamná plocha autobusu",
     prices: [
       { period: "1 mesiac", sourcePrice: 100 },
@@ -159,7 +159,7 @@ export const BUS_OFFERS: VehicleOffer[] = [
   {
     slug: "zadna-plocha-cela",
     title: "Zadná plocha — celá",
-    image: "/assets/mhd-kosice/zadna-plocha-cela.jpg",
+    image: "/assets/mhd-kosice/zadna-plocha-cela.webp",
     imageAlt: "Celá zadná reklamná plocha autobusu",
     prices: [
       { period: "1 mesiac", sourcePrice: 200 },
@@ -174,7 +174,7 @@ export const TRAM_OFFERS: VehicleOffer[] = [
   {
     slug: "celoplosny-polep-elektricka",
     title: "Celoplošný polep — električka",
-    image: "/assets/mhd-kosice/celoplosny-polep-elektricka.jpg",
+    image: "/assets/mhd-kosice/celoplosny-polep-elektricka.webp",
     imageAlt: "Celoplošný polep električky v Košiciach",
     note: "Maximálny povolený obsah grafiky na oknách je 10 %.",
     prices: [
@@ -188,7 +188,7 @@ export const TRAM_OFFERS: VehicleOffer[] = [
     slug: "e-board-xxl",
     title: "E-board XXL",
     size: "400 × 200 cm",
-    image: "/assets/mhd-kosice/e-board-xxl.jpg",
+    image: "/assets/mhd-kosice/e-board-xxl.webp",
     imageAlt: "Reklamná plocha E-board XXL na električke",
     prices: [
       { period: "1 mesiac", sourcePrice: 550 },
