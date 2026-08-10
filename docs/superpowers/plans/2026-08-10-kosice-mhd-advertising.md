@@ -147,7 +147,7 @@ git commit -m "Add Košice MHD advertising price catalog"
 
 - [ ] **Step 1: Download the selected licensed hero source locally**
 
-Use the original Wikimedia Commons file `Vario LF2+ Košice č801.JPG` by Falk2, licensed CC BY-SA 4.0, from its file page. Save only a local working copy under `tmp/` before conversion.
+Use the original Wikimedia Commons file `Vario LF2+ Košice č801.JPG` by Adehertogh, licensed CC BY-SA 4.0, from its file page. Save only a local working copy under `tmp/` before conversion.
 
 - [ ] **Step 2: Render and crop the supplied DPMK PDF diagrams**
 
