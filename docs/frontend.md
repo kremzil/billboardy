@@ -15,6 +15,7 @@ Frontend находится в `map-frontend/` и реализован как о
 
 - `map-frontend/src/pages/index.astro`
 - `map-frontend/src/pages/typ/[slug].astro`
+- `map-frontend/src/pages/reklama-na-mhd-kosice.astro`
 - `map-frontend/src/data/site.ts`
 - `map-frontend/src/pages/robots.txt.ts`
 - `map-frontend/src/pages/llms.txt.ts`
@@ -24,14 +25,19 @@ Frontend находится в `map-frontend/` и реализован как о
 
 `typ/[slug].astro` — статически генерируемые страницы типов носителей (`billboard`, `citylight`, `bigboard`, `most`, `plachta`, `fasada`, `mega-plocha`). Страница использует тот же компонент карты, но передаёт фиксированный тип носителя, чтобы карта и список `Výber v aktuálnej oblasti` грузили только релевантные данные.
 
+`reklama-na-mhd-kosice.astro` — статически генерируемая sales/catalog страница `/reklama-na-mhd-kosice/` для рекламы на košických автобусах, трамваях, SIT и VLAJKA на опорах verejného osvetlenia.
+
 ### Компоненты
 
 - `map-frontend/src/components/MapSection.astro`
 - `map-frontend/src/components/InquiryWidget.astro`
+- `map-frontend/src/components/MhdOfferCard.astro`
 
 Это Astro-shell секции карты для главной страницы и страниц типов носителей. В компоненте находится разметка заголовка, быстрых фильтров по типу, лениво отображаемого блока `Výber v aktuálnej oblasti` и контейнера Google Maps. Расширенная панель `Filtre` в секции карты не используется: выбор края приходит из hero/footer, а тип можно менять через быстрые кнопки. Компонент принимает стартовый `media_type` и может заблокировать выбор типа для страниц форматов. Клиентская логика остаётся в `src/scripts/map.ts`.
 
 `InquiryWidget.astro` — глобальный dopyt-виджет. Он показывает bubble под header после выбора плоскости на карте, хранит выбранные точки в `sessionStorage` и открывает modal с формой отправки.
+
+`MhdOfferCard.astro` — карточка позиции каталога для страницы рекламы na MHD v Košiciach.
 
 - `map-frontend/src/components/mainHero.astro`
 
@@ -44,8 +50,13 @@ Footer содержит ссылки на словацкие kraje вместо 
 ### Данные страниц типов
 
 - `map-frontend/src/data/adTypes.ts`
+- `map-frontend/src/data/mhdAdvertising.ts`
 
 Здесь хранится контент страниц типов носителей, slug-и, публичные названия и соответствие frontend-страниц значениям `media_type`, которые отправляются в backend API.
+
+`mhdAdvertising.ts` хранит недисконтированные официальные исходные цены DPMK на 2026 год. Для отображения применяется `discountPrice(sourcePrice)`: 97% от исходной цены с округлением до центов. Все показанные цены указаны без 23% DPH; временный polep стоит 100 € без DPH.
+
+Временные локальные assets страницы лежат в `public/assets/mhd-kosice/`: это схемы транспортных средств, производные от PDF, а также связанные локальные изображения. `ATTRIBUTION.md` фиксирует источники Wikimedia для hero с košickým трамваем и DPMK для материалов страницы.
 
 ### Карта и клиентская логика
 
@@ -100,6 +111,7 @@ Footer содержит ссылки на словацкие kraje вместо 
 - `src/pages/llms.txt.ts` генерирует `/llms.txt` в формате `text/markdown`: краткое описание сайта для агентов, важные страницы, публичные GET endpoints карты и ограничения по не-публичным административным маршрутам.
 - `src/pages/sitemap.xml.ts` генерирует sitemap для главной страницы, контакта, GDPR/Cookies и страниц типов носителей.
 - Для production-домена используется `PUBLIC_SITE_URL`; по умолчанию он равен `https://www.billboardy.sk`.
+- Страница `/reklama-na-mhd-kosice/` добавлена в desktop/mobile навигацию `reklamné plochy` и в sitemap.
 
 ### Шрифт
 
@@ -121,6 +133,8 @@ npm run dev
 npm run check
 npm run build
 ```
+
+Node-тесты `mhdAdvertising.test.ts` и `mhdAdvertisingPage.test.ts` проверяют соответственно расчёт цен каталога и контракт MHD-страницы. Запускайте их вместе с остальными тестами командой `npm test`.
 
 ## Build-артефакты
 
