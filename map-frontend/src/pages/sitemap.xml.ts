@@ -5,6 +5,7 @@ export const prerender = true;
 
 const staticRoutes = [
 	{ path: "/", changefreq: "weekly", priority: "1.0" },
+	{ path: "/reklama-na-mhd-kosice/", changefreq: "monthly", priority: "0.8" },
 	{ path: "/kontakt/", changefreq: "monthly", priority: "0.7" },
 	{ path: "/gdprcookies/", changefreq: "yearly", priority: "0.2" },
 ];

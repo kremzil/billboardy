@@ -4,10 +4,13 @@ import { AD_TYPE_SLUGS, SLUG_TO_TYPE } from '../data/adTypes'
 import { CONTACT_PHONE_DISPLAY, CONTACT_PHONE_TEL } from '../data/site'
 
 const basePath = import.meta.env.BASE_URL;
-const areaLinks = AD_TYPE_SLUGS.map((slug) => ({
-	label: SLUG_TO_TYPE[slug],
-	href: `${basePath}typ/${slug}/`,
-}));
+const areaLinks = [
+	...AD_TYPE_SLUGS.map((slug) => ({
+		label: SLUG_TO_TYPE[slug],
+		href: `${basePath}typ/${slug}/`,
+	})),
+	{ label: "MHD Košice", href: `${basePath}reklama-na-mhd-kosice/` },
+];
 const links = [
 	{label: 'ceny', href: `${basePath}#ceny`},
 	{label: 'mapa', href: `${basePath}#mapa`},
@@ -33,7 +36,7 @@ const normalizePath = (href: string) => {
 	const path = new URL(href, Astro.site ?? Astro.url).pathname;
 	return normalizeComparablePath(path);
 };
-const isTypePage = currentPath.startsWith("/typ/");
+const isAdvertisingPage = currentPath.startsWith("/typ/") || currentPath === "/reklama-na-mhd-kosice/";
 const isHashLink = (href: string) => href.includes("#");
 const isActivePath = (href: string) => !isHashLink(href) && normalizePath(href) === currentPath;
 ---
@@ -52,7 +55,7 @@ const isActivePath = (href: string) => !isHashLink(href) && normalizePath(href) 
 							type="button"
 							class:list={[
 								"flex items-center gap-1 text-gray-800 hover:text-brand transition-colors duration-200",
-								isTypePage && "font-bold text-brand",
+								isAdvertisingPage && "font-bold text-brand",
 							]}
 							aria-haspopup="true"
 						>
