@@ -28,3 +28,8 @@ Thumbs.db
 
 # Superpowers execution ledgers and review packages
 .superpowers/
+
+# Local exports and temporary working data
+.codex-tmp/
+outputs/
+takeout-*.zip

@@ -13,6 +13,7 @@ use Billboardy\MapApi\Repository\HybridAdSpaceRepository;
 use Billboardy\MapApi\Repository\WooCommerceAdSpaceRepository;
 use Billboardy\MapApi\Rest\AdSpaceApiController;
 use Billboardy\MapApi\Service\AdSpaceService;
+use Billboardy\MapApi\Service\TurnstileVerifier;
 
 final class Plugin
 {
@@ -48,7 +49,7 @@ final class Plugin
 
     public function registerRestRoutes(): void
     {
-        $controller = new AdSpaceApiController($this->service);
+        $controller = new AdSpaceApiController($this->service, new TurnstileVerifier());
         $controller->registerRoutes();
     }
 

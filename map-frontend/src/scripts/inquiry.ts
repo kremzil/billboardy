@@ -1,3 +1,5 @@
+import { requestTurnstileToken } from './turnstile';
+
 type InquiryItem = {
   id: string;
   code: string;
@@ -169,12 +171,15 @@ async function submitInquiry(
   const submit = form.querySelector<HTMLButtonElement>('button[type="submit"]');
   const formData = new FormData(form);
   const payload = {
+    source: 'map',
     name: String(formData.get('name') ?? '').trim(),
     email: String(formData.get('email') ?? '').trim(),
     phone: String(formData.get('phone') ?? '').trim(),
     company: String(formData.get('company') ?? '').trim(),
     note: String(formData.get('note') ?? '').trim(),
     website: String(formData.get('website') ?? '').trim(),
+    turnstileToken: '',
+    turnstileAction: 'inquiry_map',
     items,
   };
 
@@ -182,6 +187,8 @@ async function submitInquiry(
   showMessage(message, 'Odosielam dopyt...', 'muted');
 
   try {
+    payload.turnstileToken = await requestTurnstileToken(form, payload.turnstileAction);
+
     const response = await fetch(`${apiBase.replace(/\/$/, '')}/inquiries`, {
       method: 'POST',
       headers: {
@@ -190,6 +197,10 @@ async function submitInquiry(
       },
       body: JSON.stringify(payload),
     });
+
+    if (response.status === 403) {
+      throw new Error('Turnstile verification was rejected.');
+    }
 
     if (!response.ok) {
       throw new Error(`Inquiry failed with status ${response.status}`);
@@ -202,7 +213,10 @@ async function submitInquiry(
     window.setTimeout(() => closeModal(modal), 1200);
   } catch (error) {
     console.error(error);
-    showMessage(message, 'Dopyt sa nepodarilo odoslať. Skúste to prosím neskôr.', 'error');
+    const text = error instanceof Error && error.message.toLowerCase().includes('turnstile')
+      ? 'Overenie proti spamu zlyhalo. Obnovte stránku a skúste to znova.'
+      : 'Dopyt sa nepodarilo odoslať. Skúste to prosím neskôr.';
+    showMessage(message, text, 'error');
   } finally {
     submit?.removeAttribute('disabled');
   }

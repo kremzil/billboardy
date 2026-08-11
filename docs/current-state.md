@@ -43,7 +43,7 @@
 - Добавлено diff-обновление маркеров, чтобы не делать полный teardown/rebuild на каждый `idle`.
 - Добавлена отмена устаревших `/map-points` запросов при активном pan/zoom/search.
 - Клик по крупному cluster теперь агрессивнее углубляет zoom, чтобы не требовать ручного докручивания в типичных dense-областях.
-- Добавлена статически генерируемая страница рекламы na MHD v Košiciach с полным каталогом autobusov, električiek, SIT и VLAJKA, ценами на 3% ниже официальных исходных, временным polep за 100 € без DPH, ссылками в desktop/mobile навигации `reklamné plochy` и sitemap.
+- Добавлена статически генерируемая страница рекламы na MHD v Košiciach с полным каталогом autobusov, električiek, SIT и VLAJKA, временным polep за 100 € без DPH, ссылками в desktop/mobile навигации `reklamné plochy` и sitemap.
 
 ## Что считать текущим runtime-источником данных
 

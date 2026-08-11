@@ -1,3 +1,5 @@
+import { requestTurnstileToken } from './turnstile';
+
 type ContactPayload = {
   source: string;
   name: string;
@@ -11,6 +13,8 @@ type ContactPayload = {
   startDate: string;
   message: string;
   website: string;
+  turnstileToken: string;
+  turnstileAction: string;
   items: [];
 };
 
@@ -73,6 +77,8 @@ async function submitContactForm(form: HTMLFormElement, message?: HTMLElement | 
   setMessage(message, 'Odosielam...', 'muted');
 
   try {
+    payload.turnstileToken = await requestTurnstileToken(form, payload.turnstileAction);
+
     const response = await fetch(`${apiBase.replace(/\/$/, '')}/inquiries`, {
       method: 'POST',
       headers: {
@@ -82,6 +88,10 @@ async function submitContactForm(form: HTMLFormElement, message?: HTMLElement | 
       body: JSON.stringify(payload),
     });
 
+    if (response.status === 403) {
+      throw new Error('Turnstile verification was rejected.');
+    }
+
     if (!response.ok) {
       throw new Error(`Contact request failed with status ${response.status}`);
     }
@@ -89,7 +99,7 @@ async function submitContactForm(form: HTMLFormElement, message?: HTMLElement | 
     handleSuccess(form, payload, message);
   } catch (error) {
     console.error(error);
-    setMessage(message, 'Dopyt sa nepodarilo odoslať. Skúste to prosím neskôr.', 'error');
+    setMessage(message, errorMessage(error), 'error');
   } finally {
     setLoading(form, false);
   }
@@ -97,9 +107,10 @@ async function submitContactForm(form: HTMLFormElement, message?: HTMLElement | 
 
 function formPayload(form: HTMLFormElement): ContactPayload {
   const formData = new FormData(form);
+  const source = form.dataset.contactKind ?? 'contact';
 
   return {
-    source: form.dataset.contactKind ?? 'contact',
+    source,
     name: field(formData, 'name'),
     email: field(formData, 'email'),
     phone: field(formData, 'phone'),
@@ -111,8 +122,18 @@ function formPayload(form: HTMLFormElement): ContactPayload {
     startDate: field(formData, 'startDate'),
     message: field(formData, 'message'),
     website: field(formData, 'website'),
+    turnstileToken: '',
+    turnstileAction: `inquiry_${source}`,
     items: [],
   };
+}
+
+function errorMessage(error: unknown): string {
+  if (error instanceof Error && error.message.toLowerCase().includes('turnstile')) {
+    return 'Overenie proti spamu zlyhalo. Obnovte stránku a skúste to znova.';
+  }
+
+  return 'Dopyt sa nepodarilo odoslať. Skúste to prosím neskôr.';
 }
 
 function handleSuccess(form: HTMLFormElement, payload: ContactPayload, message?: HTMLElement | null): void {

@@ -23,6 +23,7 @@ type Props = {
 	image?: string;
 	imageAlt?: string;
 	noindex?: boolean;
+	pageStructuredData?: Record<string, unknown>[];
 };
 
 const {
@@ -32,6 +33,7 @@ const {
 	image = DEFAULT_OG_IMAGE,
 	imageAlt = "Interaktívna mapa reklamných plôch Billboardy.sk",
 	noindex = false,
+	pageStructuredData = [],
 } = Astro.props as Props;
 
 const title = pageTitle ? `${pageTitle} | ${SITE_NAME}` : DEFAULT_TITLE;
@@ -108,6 +110,7 @@ const structuredData = {
 				itemListElement: advertisingFormatOffers,
 			},
 		},
+		...pageStructuredData,
 	],
 };
 ---

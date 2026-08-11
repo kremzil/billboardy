@@ -6,16 +6,19 @@ namespace Billboardy\MapApi\Rest;
 
 use Billboardy\MapApi\Admin\SettingsPage;
 use Billboardy\MapApi\Service\AdSpaceService;
+use Billboardy\MapApi\Service\TurnstileVerifier;
 
 final class AdSpaceApiController
 {
     private const NAMESPACE = 'billboardy/v1';
 
     private AdSpaceService $service;
+    private TurnstileVerifier $turnstile;
 
-    public function __construct(AdSpaceService $service)
+    public function __construct(AdSpaceService $service, TurnstileVerifier $turnstile)
     {
         $this->service = $service;
+        $this->turnstile = $turnstile;
     }
 
     public function registerRoutes(): void
@@ -112,22 +115,38 @@ final class AdSpaceApiController
             return $this->response(['data' => ['sent' => true]]);
         }
 
+        $source = sanitize_key((string) ($payload['source'] ?? 'map'));
+
+        if (!in_array($source, ['map', 'contact', 'quick'], true)) {
+            $source = 'map';
+        }
+
+        $turnstileToken = sanitize_text_field((string) ($payload['turnstileToken'] ?? ''));
+        $turnstileAction = 'inquiry_' . $source;
+        $remoteIp = isset($_SERVER['REMOTE_ADDR']) ? sanitize_text_field((string) $_SERVER['REMOTE_ADDR']) : '';
+
+        if (
+            !hash_equals($turnstileAction, sanitize_key((string) ($payload['turnstileAction'] ?? '')))
+            || !$this->turnstile->verify($turnstileToken, $turnstileAction, $remoteIp)
+        ) {
+            return new \WP_Error(
+                'billboardy_turnstile_failed',
+                __('Overenie proti spamu zlyhalo.', 'billboardy-map-api'),
+                ['status' => 403]
+            );
+        }
+
         $name = sanitize_text_field((string) ($payload['name'] ?? ''));
         $email = sanitize_email((string) ($payload['email'] ?? ''));
         $phone = sanitize_text_field((string) ($payload['phone'] ?? ''));
         $company = sanitize_text_field((string) ($payload['company'] ?? ''));
         $note = sanitize_textarea_field((string) ($payload['note'] ?? ''));
-        $source = sanitize_key((string) ($payload['source'] ?? 'map'));
         $adType = sanitize_text_field((string) ($payload['adType'] ?? ''));
         $region = sanitize_text_field((string) ($payload['region'] ?? ''));
         $budget = sanitize_text_field((string) ($payload['budget'] ?? ''));
         $startDate = sanitize_text_field((string) ($payload['startDate'] ?? ''));
         $message = sanitize_textarea_field((string) ($payload['message'] ?? ''));
         $items = $this->sanitizeInquiryItems($payload['items'] ?? []);
-
-        if (!in_array($source, ['map', 'contact', 'quick'], true)) {
-            $source = 'map';
-        }
 
         $isMapInquiry = $source === 'map';
 

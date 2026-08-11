@@ -1,0 +1,42 @@
+---
+import { Icon } from "astro-icon/components";
+
+const basePath = import.meta.env.BASE_URL;
+---
+
+<section class="bg-gray-50 py-20" aria-labelledby="mhd-promo-title">
+	<div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+		<div class="grid overflow-hidden rounded-3xl bg-bb-ink shadow-xl lg:grid-cols-[1.08fr_0.92fr]">
+			<div class="relative min-h-80 overflow-hidden lg:min-h-120">
+				<img
+					src="/assets/mhd-kosice/hero-tram-kosice.webp"
+					alt="Električka MHD v Košiciach"
+					loading="lazy"
+					decoding="async"
+					class="absolute inset-0 h-full w-full object-cover"
+				/>
+				<div class="absolute inset-0 bg-linear-to-t from-bb-ink/70 via-transparent to-transparent lg:bg-linear-to-r lg:from-transparent lg:to-bb-ink/35"></div>
+			</div>
+
+			<div class="flex flex-col justify-center px-6 py-10 text-white sm:px-10 lg:px-12 lg:py-14">
+				<p class="mb-3 text-xs font-extrabold uppercase tracking-[0.1em] text-red-300">Reklama v pohybe</p>
+				<h2 id="mhd-promo-title" class="text-3xl font-black leading-tight sm:text-4xl">Reklama v MHD Košice</h2>
+				<p class="mt-5 max-w-xl leading-relaxed text-white/70">
+					Oslovte ľudí na cestách po celom meste. Vyberte si reklamné plochy na autobusoch, električkách alebo stĺpoch verejného osvetlenia.
+				</p>
+
+				<ul class="mt-7 grid gap-3 text-sm font-bold sm:grid-cols-2">
+					<li class="flex items-center gap-2"><Icon name="lucide:check" width="16" height="16" class="text-red-300" />Autobusy a električky</li>
+					<li class="flex items-center gap-2"><Icon name="lucide:check" width="16" height="16" class="text-red-300" />SIT a reklamné vlajky</li>
+					<li class="flex items-center gap-2"><Icon name="lucide:check" width="16" height="16" class="text-red-300" />Viac formátov a rozmerov</li>
+					<li class="flex items-center gap-2"><Icon name="lucide:check" width="16" height="16" class="text-red-300" />Cenník priamo na stránke</li>
+				</ul>
+
+				<a href={`${basePath}reklama-na-mhd-kosice/`} class="mt-8 inline-flex w-fit items-center gap-2 rounded-xl bg-brand px-6 py-3.5 text-sm font-extrabold text-white transition-opacity hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-bb-ink">
+					Pozrieť reklamu v MHD Košice
+					<Icon name="lucide:arrow-right" width="16" height="16" />
+				</a>
+			</div>
+		</div>
+	</div>
+</section>

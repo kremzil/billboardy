@@ -5,6 +5,7 @@ import { CONTACT_EMAIL, CONTACT_PHONE_DISPLAY, CONTACT_PHONE_TEL } from '../data
 
 const basePath = import.meta.env.BASE_URL;
 const plochy = AD_TYPE_SLUGS.map((slug) => ({ label: SLUG_TO_TYPE[slug], href: `${basePath}typ/${slug}/` }));
+plochy.push({ label: "Reklama v MHD Košice", href: `${basePath}reklama-na-mhd-kosice/` });
 const kraje = [
 	{ value: '', label: 'Celé Slovensko' },
 	{ value: 'bratislavsky', label: 'Bratislavský kraj' },
