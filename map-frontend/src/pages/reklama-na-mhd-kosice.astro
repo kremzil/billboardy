@@ -5,7 +5,6 @@ import MhdOfferCard from "../components/MhdOfferCard.astro";
 import {
 	BUS_OFFERS,
 	FLAG_RENTALS,
-	POLEP_PRICE,
 	SIT_RENTALS,
 	STREET_CATEGORIES,
 	TRAM_OFFERS,
@@ -19,7 +18,6 @@ const contactHref = `${basePath}kontakt/`;
 const title = "Reklama na autobusoch a električkách Košice";
 const description =
 	"Prenájom reklamných plôch na autobusoch, električkách a stĺpoch verejného osvetlenia v Košiciach. Ceny prenájmu sú o 3 % nižšie oproti cenníku DPMK.";
-const polepLine = `Polep: ${formatEuro(POLEP_PRICE)} bez DPH`;
 ---
 
 <Layout
@@ -137,7 +135,6 @@ const polepLine = `Polep: ${formatEuro(POLEP_PRICE)} bez DPH`;
 									</tbody>
 								</table>
 							</div>
-							<p class="border-t border-gray-100 px-5 py-4 text-sm font-extrabold text-gray-700 sm:px-6">{polepLine}</p>
 						</article>
 
 						<article class="overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-sm">
@@ -156,7 +153,6 @@ const polepLine = `Polep: ${formatEuro(POLEP_PRICE)} bez DPH`;
 									</tbody>
 								</table>
 							</div>
-							<p class="border-t border-gray-100 px-5 py-4 text-sm font-extrabold text-gray-700 sm:px-6">{polepLine}</p>
 						</article>
 
 					</div>
@@ -194,7 +190,7 @@ const polepLine = `Polep: ${formatEuro(POLEP_PRICE)} bez DPH`;
 									data-category-panel={category.code}
 									hidden={index !== 0}
 								>
-									<ul class="street-category-list grid max-h-[30rem] grid-cols-1 gap-2 overflow-y-auto pr-1 sm:grid-cols-2 lg:h-full lg:max-h-none lg:grid-cols-1" aria-label={`Ulice kategórie ${category.code}`}>
+									<ul class="street-category-list grid max-h-[30rem] auto-rows-max content-start grid-cols-1 gap-2 overflow-y-auto pr-1 sm:grid-cols-2 lg:h-full lg:max-h-none lg:grid-cols-1" aria-label={`Ulice kategórie ${category.code}`}>
 										{category.items.map((item) => <li class="rounded-lg border border-gray-200 bg-white px-3 py-2.5 text-sm font-semibold text-gray-700 shadow-xs">{item}</li>)}
 									</ul>
 								</div>

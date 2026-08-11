@@ -30,6 +30,7 @@ The full comparison already uses a focused crop of the complete `Verejné osvetl
 - Click state: B selected; measured tab widths 88 / 184 / 88 px; 38 rows visible in the active panel.
 - Keyboard state: Arrow Right from B selects C; measured widths 88 / 88 / 184 px.
 - Mobile: panel stacks below the tables; page client width equals scroll width.
+- Category C row-height regression check: all three visible rows measure 42 px, matching a visible category B row at 42 px.
 - Browser console: 0 errors.
 
 ## Findings
@@ -42,6 +43,8 @@ The full comparison already uses a focused crop of the complete `Verejné osvetl
 ## Comparison history
 
 - Initial coded comparison: no actionable P0/P1/P2 differences. No visual fix iteration was required after the side-by-side review.
+- Browser annotation follow-up: category C's three grid rows stretched to fill the panel height. Added max-content grid rows with start alignment; post-fix browser measurements are 42 / 42 / 42 px in C and 42 px in B.
+- Browser annotation follow-up: removed the `Polep: 100,00 € bez DPH` footer rows from the SIT and VLAJKA tables only; the 13 vehicle-format cards retain the polep price.
 
 ## Final result
 
