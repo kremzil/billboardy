@@ -21,6 +21,7 @@ test("built MHD page exposes the full offer and SEO contract", async () => {
     "Polep: 100,00 € bez DPH",
   ];
   for (const copy of requiredCopy) assert.ok(html.includes(copy), `Missing built copy: ${copy}`);
+  assert.doesNotMatch(html, /Informácie k cenám/);
   assert.equal((html.match(/href="mailto:obchod@kpkreklama\.sk"/g) ?? []).length, 2);
   assert.match(html, /<link rel="canonical" href="https:\/\/www\.billboardy\.sk\/reklama-na-mhd-kosice\/"/);
   assert.match(html, /href="\/reklama-na-mhd-kosice\/"[^>]*aria-current="page"/);

@@ -8,7 +8,6 @@ import {
 	POLEP_PRICE,
 	SIT_RENTALS,
 	TRAM_OFFERS,
-	VAT_RATE,
 	discountPrice,
 	formatEuro,
 } from "../data/mhdAdvertising";
@@ -20,10 +19,6 @@ const title = "Reklama na autobusoch a električkách Košice";
 const description =
 	"Prenájom reklamných plôch na autobusoch, električkách a stĺpoch verejného osvetlenia v Košiciach. Ceny prenájmu sú o 3 % nižšie oproti cenníku DPMK.";
 const polepLine = `Polep: ${formatEuro(POLEP_PRICE)} bez DPH`;
-const dpmkVehiclePriceList =
-	"https://www.dpmk.sk/sites/default/files/images/reklama/Cenn%C3%ADk%20reklamn%C3%BDch%20pl%C3%B4ch%206_2026.pdf";
-const dpmkLightingPriceList =
-	"https://www.dpmk.sk/sites/default/files/images/reklama/Cenn%C3%ADk%20pren%C3%A1jmu%20verejn%C3%A9ho%20a%20trak%C4%8Dn%C3%A9ho%20osvetlenia%20platn%C3%BD%20k%2001.04.2026.pdf";
 ---
 
 <Layout
@@ -164,17 +159,6 @@ const dpmkLightingPriceList =
 							<p class="border-t border-gray-100 px-5 py-4 text-sm font-extrabold text-gray-700 sm:px-6">{polepLine}</p>
 						</article>
 					</div>
-				</div>
-			</section>
-
-			<section class="mt-16 rounded-2xl border border-brand/15 bg-red-50 p-6 sm:p-8" aria-labelledby="pricing-note-title">
-				<h2 id="pricing-note-title" class="text-xl font-black text-bb-ink">Informácie k cenám</h2>
-				<p class="mt-3 leading-relaxed text-gray-700">
-					Ceny sú uvedené bez {VAT_RATE} % DPH a sú o 3 % nižšie oproti oficiálnemu cenníku DPMK platnému v roku 2026. Dočasný polep stojí {formatEuro(POLEP_PRICE)} bez DPH. Dostupnosť plochy a konečnú ponuku potvrdíme individuálne.
-				</p>
-				<div class="mt-4 flex flex-wrap gap-x-5 gap-y-2 text-sm font-bold">
-					<a href={dpmkVehiclePriceList} class="text-brand underline underline-offset-4 hover:text-red-800">Oficiálny cenník reklamných plôch DPMK</a>
-					<a href={dpmkLightingPriceList} class="text-brand underline underline-offset-4 hover:text-red-800">Oficiálny cenník verejného osvetlenia DPMK</a>
 				</div>
 			</section>
 		</div>
