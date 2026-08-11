@@ -5,6 +5,7 @@ import {
   TRAM_OFFERS,
   SIT_RENTALS,
   FLAG_RENTALS,
+  STREET_CATEGORIES,
   discountPrice,
   formatEuro,
 } from "./mhdAdvertising.ts";
@@ -61,4 +62,13 @@ test("catalog retains every official rental surface, period, and source price", 
     { title: "VO A", period: "12 mesiacov", sourcePrice: 375 },
     { title: "VO B", period: "12 mesiacov", sourcePrice: 275 },
   ]);
+
+  assert.deepEqual(STREET_CATEGORIES.map(({ code, items }) => ({ code, count: items.length })), [
+    { code: "A", count: 21 },
+    { code: "B", count: 38 },
+    { code: "C", count: 3 },
+  ]);
+  assert.deepEqual(STREET_CATEGORIES[0]?.items.slice(0, 3), ["Alejová", "Bačíkova", "Hlinkova"]);
+  assert.deepEqual(STREET_CATEGORIES[1]?.items.slice(-3), ["Tr. Ludvíka Svobodu", "Zimná", "Žižková"]);
+  assert.deepEqual(STREET_CATEGORIES[2]?.items, ["Ostatné ulice", "Ulice na sídliskách", "Sadové stĺpy (do 6 m)"]);
 });

@@ -18,6 +18,11 @@ export interface RentalOffer {
   sourcePrice: number;
 }
 
+export interface StreetCategory {
+  code: "A" | "B" | "C";
+  items: string[];
+}
+
 export function discountPrice(sourcePrice: number): number {
   return Math.round((sourcePrice * (1 - DISCOUNT_RATE) + Number.EPSILON) * 100) / 100;
 }
@@ -214,4 +219,80 @@ export const FLAG_RENTALS: RentalOffer[] = [
   { title: "VO B", period: "6 mesiacov", sourcePrice: 155 },
   { title: "VO A", period: "12 mesiacov", sourcePrice: 375 },
   { title: "VO B", period: "12 mesiacov", sourcePrice: 275 },
+];
+
+export const STREET_CATEGORIES: StreetCategory[] = [
+  {
+    code: "A",
+    items: [
+      "Alejová",
+      "Bačíkova",
+      "Hlinkova",
+      "Hviezdoslavova",
+      "Jantárová",
+      "Južná trieda",
+      "Komenského",
+      "Kuzmányho",
+      "Moldavská",
+      "Moyzesova",
+      "Nám. MMM",
+      "Nám. osloboditeľov",
+      "Nižné Kapustníky",
+      "Prešovská",
+      "Rastislavova",
+      "Štefánikova",
+      "Štúrova",
+      "Toryská",
+      "Tr. SNP",
+      "Ul. osloboditeľov",
+      "Watsonova",
+    ],
+  },
+  {
+    code: "B",
+    items: [
+      "Americká trieda",
+      "Bottova",
+      "Červený rak",
+      "ČSLA",
+      "Dopravná",
+      "Festivalové nám.",
+      "Gemerská",
+      "Gorkého",
+      "Herlianska",
+      "Južné nábrežie",
+      "Kasárenské nám.",
+      "Kováčska",
+      "Krmanova",
+      "Ľavobrežná",
+      "Letná",
+      "Masarykova",
+      "Moskovská",
+      "Národná trieda",
+      "Palackého",
+      "Pod furčou",
+      "Popradská",
+      "Pri myslavskom potoku",
+      "Pri prachárni",
+      "Priemyselná",
+      "Protifašistických bojovníkov",
+      "Puškinova",
+      "Rooseveltova",
+      "Sečovská",
+      "Senný trh",
+      "Severné nábrežie",
+      "Slanecká",
+      "Staničné námestie",
+      "Svätoplukova",
+      "Továrenská",
+      "Tr. KVP",
+      "Tr. Ludvíka Svobodu",
+      "Zimná",
+      "Žižková",
+    ],
+  },
+  {
+    code: "C",
+    items: ["Ostatné ulice", "Ulice na sídliskách", "Sadové stĺpy (do 6 m)"],
+  },
 ];
