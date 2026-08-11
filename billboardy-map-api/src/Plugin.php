@@ -6,11 +6,13 @@ namespace Billboardy\MapApi;
 
 use Billboardy\MapApi\Admin\SettingsPage;
 use Billboardy\MapApi\Admin\ImportPage;
+use Billboardy\MapApi\Admin\InquiryLogPage;
 use Billboardy\MapApi\Database\Schema;
 use Billboardy\MapApi\Domain\AdSpaceMapper;
 use Billboardy\MapApi\Repository\DatabaseAdSpaceRepository;
 use Billboardy\MapApi\Repository\HybridAdSpaceRepository;
 use Billboardy\MapApi\Repository\WooCommerceAdSpaceRepository;
+use Billboardy\MapApi\Repository\InquiryLogRepository;
 use Billboardy\MapApi\Rest\AdSpaceApiController;
 use Billboardy\MapApi\Service\AdSpaceService;
 use Billboardy\MapApi\Service\TurnstileVerifier;
@@ -20,12 +22,14 @@ final class Plugin
     public const OPTION_CACHE_VERSION = 'billboardy_map_api_cache_version';
 
     private AdSpaceService $service;
+    private InquiryLogRepository $inquiryLogs;
 
     public function __construct()
     {
         $mapper = new AdSpaceMapper();
         $repository = new HybridAdSpaceRepository(new DatabaseAdSpaceRepository(), new WooCommerceAdSpaceRepository());
         $this->service = new AdSpaceService($repository, $mapper);
+        $this->inquiryLogs = new InquiryLogRepository();
     }
 
     public function register(): void
@@ -33,8 +37,13 @@ final class Plugin
         add_action('rest_api_init', [$this, 'registerRestRoutes']);
         add_action('admin_menu', [new SettingsPage(), 'registerMenu']);
         add_action('admin_menu', [new ImportPage(), 'registerMenu']);
+        $inquiryLogPage = new InquiryLogPage($this->inquiryLogs);
+        add_action('admin_menu', [$inquiryLogPage, 'registerMenu']);
         add_action('admin_init', [new SettingsPage(), 'registerSettings']);
-        add_action('admin_init', [$this, 'ensureSchema']);
+        add_action('init', [$this, 'ensureSchema']);
+        add_action('init', [$this, 'scheduleInquiryCleanup']);
+        add_action('billboardy_cleanup_inquiry_logs', [$this, 'cleanupInquiryLogs']);
+        add_action('admin_post_billboardy_export_inquiries', [$inquiryLogPage, 'export']);
         add_action('admin_post_billboardy_map_clear_cache', [$this, 'clearCacheAction']);
         add_action('admin_post_billboardy_map_warm_cache', [$this, 'warmCacheAction']);
 
@@ -49,8 +58,20 @@ final class Plugin
 
     public function registerRestRoutes(): void
     {
-        $controller = new AdSpaceApiController($this->service, new TurnstileVerifier());
+        $controller = new AdSpaceApiController($this->service, new TurnstileVerifier(), $this->inquiryLogs);
         $controller->registerRoutes();
+    }
+
+    public function scheduleInquiryCleanup(): void
+    {
+        if (!wp_next_scheduled('billboardy_cleanup_inquiry_logs')) {
+            wp_schedule_event(time() + HOUR_IN_SECONDS, 'daily', 'billboardy_cleanup_inquiry_logs');
+        }
+    }
+
+    public function cleanupInquiryLogs(): void
+    {
+        $this->inquiryLogs->deleteExpired(180);
     }
 
     public function ensureSchema(): void

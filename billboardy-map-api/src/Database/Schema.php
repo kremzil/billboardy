@@ -7,13 +7,20 @@ namespace Billboardy\MapApi\Database;
 final class Schema
 {
     public const VERSION_OPTION = 'billboardy_map_api_schema_version';
-    public const VERSION = '1.0.0';
+    public const VERSION = '1.1.0';
 
     public static function tableName(): string
     {
         global $wpdb;
 
         return $wpdb->prefix . 'billboardy_ad_spaces';
+    }
+
+    public static function inquiryLogTableName(): string
+    {
+        global $wpdb;
+
+        return $wpdb->prefix . 'billboardy_inquiry_logs';
     }
 
     public static function install(): void
@@ -65,6 +72,34 @@ final class Schema
         ) {$charset};";
 
         dbDelta($sql);
+
+        $inquiryLogTable = self::inquiryLogTableName();
+        $inquiryLogSql = "CREATE TABLE {$inquiryLogTable} (
+            id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+            source VARCHAR(20) NOT NULL,
+            status VARCHAR(20) NOT NULL DEFAULT 'pending',
+            name VARCHAR(255) NOT NULL DEFAULT '',
+            email VARCHAR(255) NOT NULL,
+            phone VARCHAR(100) NOT NULL DEFAULT '',
+            company VARCHAR(255) NOT NULL DEFAULT '',
+            type_format VARCHAR(255) NOT NULL DEFAULT '',
+            note TEXT NULL,
+            details_json LONGTEXT NULL,
+            items_json LONGTEXT NULL,
+            recipient_email VARCHAR(255) NOT NULL DEFAULT '',
+            subject VARCHAR(255) NOT NULL DEFAULT '',
+            error_message TEXT NULL,
+            created_at DATETIME NOT NULL,
+            updated_at DATETIME NOT NULL,
+            sent_at DATETIME NULL,
+            PRIMARY KEY  (id),
+            KEY status (status),
+            KEY source (source),
+            KEY email (email),
+            KEY created_at (created_at)
+        ) {$charset};";
+
+        dbDelta($inquiryLogSql);
         update_option(self::VERSION_OPTION, self::VERSION, false);
     }
 }

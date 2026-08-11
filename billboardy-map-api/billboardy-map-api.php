@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Billboardy Map API
  * Description: Clean REST API for billboard advertising spaces sourced from WooCommerce products.
- * Version: 0.2.0
+ * Version: 0.3.0
  * Author: Billboardy.sk
  * Requires PHP: 7.4
  * Requires at least: 6.0
@@ -15,7 +15,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('BILLBOARDY_MAP_API_VERSION', '0.2.0');
+define('BILLBOARDY_MAP_API_VERSION', '0.3.0');
 define('BILLBOARDY_MAP_API_FILE', __FILE__);
 define('BILLBOARDY_MAP_API_PATH', plugin_dir_path(__FILE__));
 define('BILLBOARDY_MAP_API_URL', plugin_dir_url(__FILE__));

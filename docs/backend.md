@@ -22,12 +22,14 @@ Backend реализован как WordPress plugin в каталоге `billbo
 
 - `billboardy-map-api/src/Admin/SettingsPage.php`
 - `billboardy-map-api/src/Admin/ImportPage.php`
+- `billboardy-map-api/src/Admin/InquiryLogPage.php`
 
 Тут лежат:
 
 - настройки плагина;
 - очистка и прогрев кэша;
 - интерфейс импорта файлов.
+- закрытый журнал заявок с поиском, фильтрами и CSV-экспортом.
 
 ### Database
 
@@ -99,6 +101,6 @@ Get-ChildItem -Path billboardy-map-api -Recurse -Filter *.php | ForEach-Object {
 - `/map-points` при работе с собственной таблицей использует отдельную SQL-проекцию только под поля карты и списка, без полной доменной модели.
 - `/ad-spaces` при работе с собственной таблицей использует SQL `COUNT(*)` и `LIMIT/OFFSET`, а не пагинацию поверх полного массива в PHP.
 - `/ad-spaces` принимает те же `bounds`, `media_type`, `city` и `search`, что и карта, поэтому frontend может лениво подгружать список объектов текущей области по 10 записей без запроса полного набора.
-- `/inquiries` принимает публичный POST из dopyt-виджета frontend. Перед валидацией контактных полей endpoint проверяет одноразовый Cloudflare Turnstile token и его `action`; запрос без успешной серверной проверки завершается с HTTP 403 и не вызывает `wp_mail`. Secret задаётся только на сервере константой `BILLBOARDY_TURNSTILE_SECRET` в `wp-config.php`, а публичный site key — frontend-переменной `PUBLIC_TURNSTILE_SITE_KEY`. После anti-spam проверки endpoint валидирует контактные поля и выбранные плоскости, затем отправляет письмо через `wp_mail` на адрес из настройки плагина `E-mail pre dopyty`; если настройка пустая или невалидная, используется admin email сайта.
+- `/inquiries` принимает публичный POST из dopyt-виджета frontend. Перед валидацией контактных полей endpoint проверяет одноразовый Cloudflare Turnstile token и его `action`; запрос без успешной серверной проверки завершается с HTTP 403 и не вызывает `wp_mail`. Secret задаётся только на сервере константой `BILLBOARDY_TURNSTILE_SECRET` в `wp-config.php`, а публичный site key — frontend-переменной `PUBLIC_TURNSTILE_SITE_KEY`. После anti-spam проверки endpoint валидирует контактные поля и выбранные плоскости, сохраняет заявку в таблице `wp_billboardy_inquiry_logs`, затем отправляет письмо через `wp_mail` и фиксирует статус `sent` или `failed`. Honeypot/CAPTCHA-спам и невалидные формы не записываются. Журнал доступен только администраторам в `Settings → Dopyty Billboardy`, поддерживает поиск, фильтры и CSV; записи автоматически удаляются через 180 дней. Адрес письма берётся из настройки плагина `E-mail pre dopyty`; если настройка пустая или невалидная, используется admin email сайта.
 - `/filters` при работе с собственной таблицей строятся через `SELECT DISTINCT`, а не через проход по `allMapped()`.
 - Если собственная таблица пуста и backend падает в WooCommerce fallback, путь остаётся заметно тяжелее, чем чтение из dedicated table.

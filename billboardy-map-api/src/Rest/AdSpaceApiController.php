@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Billboardy\MapApi\Rest;
 
 use Billboardy\MapApi\Admin\SettingsPage;
+use Billboardy\MapApi\Repository\InquiryLogRepository;
 use Billboardy\MapApi\Service\AdSpaceService;
 use Billboardy\MapApi\Service\TurnstileVerifier;
 
@@ -14,11 +15,13 @@ final class AdSpaceApiController
 
     private AdSpaceService $service;
     private TurnstileVerifier $turnstile;
+    private InquiryLogRepository $inquiryLogs;
 
-    public function __construct(AdSpaceService $service, TurnstileVerifier $turnstile)
+    public function __construct(AdSpaceService $service, TurnstileVerifier $turnstile, InquiryLogRepository $inquiryLogs)
     {
         $this->service = $service;
         $this->turnstile = $turnstile;
+        $this->inquiryLogs = $inquiryLogs;
     }
 
     public function registerRoutes(): void
@@ -183,7 +186,29 @@ final class AdSpaceApiController
             'Reply-To: ' . $replyName . ' <' . $email . '>',
         ];
 
+        $logId = $this->inquiryLogs->create([
+            'source' => $source,
+            'name' => $name,
+            'email' => $email,
+            'phone' => $phone,
+            'company' => $company,
+            'type_format' => $this->inquiryTypeFormat($source, $adType, $items),
+            'note' => $note !== '' ? $note : $message,
+            'details_json' => (string) wp_json_encode([
+                'adType' => $adType,
+                'region' => $region,
+                'budget' => $budget,
+                'startDate' => $startDate,
+                'message' => $message,
+            ]),
+            'items_json' => (string) wp_json_encode($items),
+            'recipient_email' => $recipient,
+            'subject' => $subject,
+        ]);
+
         if (!wp_mail($recipient, $subject, $body, $headers)) {
+            $this->inquiryLogs->markFailed($logId, 'wp_mail returned false');
+
             return new \WP_Error(
                 'billboardy_inquiry_not_sent',
                 __('Inquiry could not be sent.', 'billboardy-map-api'),
@@ -191,12 +216,42 @@ final class AdSpaceApiController
             );
         }
 
+        $this->inquiryLogs->markSent($logId);
+
         return $this->response([
             'data' => [
                 'sent' => true,
                 'count' => count($items),
             ],
         ]);
+    }
+
+    /**
+     * @param array<int, array<string, string>> $items
+     */
+    private function inquiryTypeFormat(string $source, string $adType, array $items): string
+    {
+        if ($source === 'quick') {
+            return 'Rýchly dopyt';
+        }
+
+        if ($source === 'contact') {
+            return $adType !== '' ? $adType : 'Kontaktný dopyt';
+        }
+
+        $formats = [];
+
+        foreach ($items as $item) {
+            $format = $item['mediaTypeLabel'] !== '' ? $item['mediaTypeLabel'] : $item['code'];
+
+            if ($format !== '') {
+                $formats[] = $format;
+            }
+        }
+
+        $formats = array_values(array_unique($formats));
+
+        return $formats === [] ? 'Dopyt z mapy' : implode(', ', array_slice($formats, 0, 5));
     }
 
     private function response(array $payload, int $publicMaxAge = 0): \WP_REST_Response
