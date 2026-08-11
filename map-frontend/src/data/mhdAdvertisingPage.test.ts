@@ -35,7 +35,7 @@ test("built MHD page exposes the full offer and SEO contract", async () => {
   assert.match(html, /href="#autobusy"/);
   assert.match(html, /href="#elektricky"/);
   assert.match(html, /href="#verejne-osvetlenie"/);
-  assert.match(html, /aria-label="Kategórie reklamy v MHD"[^>]*sticky/);
+  assert.match(html, /data-mhd-catalog-nav[^>]*data-visible="false"[^>]*aria-hidden="true"[^>]*aria-label="Kategórie reklamy v MHD"[^>]*fixed[^>]*top-\[121px\]/);
   assert.match(html, /data-category-tab="A"[^>]*aria-selected="true"|aria-selected="true"[^>]*data-category-tab="A"/);
   assert.match(html, /street-category-list[^"\n]*auto-rows-max[^"\n]*content-start/);
   assert.doesNotMatch(html, /Informácie k cenám/);

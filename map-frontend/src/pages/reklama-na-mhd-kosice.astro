@@ -190,7 +190,7 @@ const MHD_SPECS = [
 			</div>
 		</div>
 
-		<nav aria-label="Kategórie reklamy v MHD" class="sticky top-30 z-30 border-y border-white/10 bg-bb-control/95 shadow-md backdrop-blur">
+		<nav data-mhd-catalog-nav data-visible="false" aria-hidden="true" aria-label="Kategórie reklamy v MHD" class="pointer-events-none fixed inset-x-0 top-[121px] z-30 border-y border-white/10 bg-bb-control/95 opacity-0 shadow-md backdrop-blur transition-opacity duration-200">
 			<div class="mx-auto flex max-w-7xl gap-2 overflow-x-auto px-4 py-3 sm:px-6 lg:px-8">
 				<a href="#autobusy" class="shrink-0 rounded-full border border-white/10 bg-white/10 px-4 py-2 text-sm font-extrabold text-white transition-colors hover:bg-white hover:text-bb-control focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-bb-control">Autobusy</a>
 				<a href="#elektricky" class="shrink-0 rounded-full border border-white/10 bg-white/10 px-4 py-2 text-sm font-extrabold text-white transition-colors hover:bg-white hover:text-bb-control focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-bb-control">Električky</a>
@@ -332,6 +332,11 @@ const MHD_SPECS = [
 </Layout>
 
 <style>
+	[data-mhd-catalog-nav][data-visible="true"] {
+		pointer-events: auto;
+		opacity: 1;
+	}
+
 	.street-category-tab {
 		min-width: 0;
 		flex: 1 1 0%;
@@ -371,6 +376,22 @@ const MHD_SPECS = [
 </style>
 
 <script>
+	const catalogNav = document.querySelector<HTMLElement>("[data-mhd-catalog-nav]");
+	const overviewSection = document.querySelector<HTMLElement>("#o-mhd");
+	const catalogNavLinks = Array.from(catalogNav?.querySelectorAll<HTMLAnchorElement>("a") ?? []);
+
+	const syncCatalogNav = () => {
+		if (!catalogNav || !overviewSection) return;
+		const isVisible = overviewSection.getBoundingClientRect().bottom <= 184;
+		catalogNav.dataset.visible = String(isVisible);
+		catalogNav.setAttribute("aria-hidden", String(!isVisible));
+		catalogNavLinks.forEach((link) => isVisible ? link.removeAttribute("tabindex") : link.setAttribute("tabindex", "-1"));
+	};
+
+	window.addEventListener("scroll", syncCatalogNav, { passive: true });
+	window.addEventListener("resize", syncCatalogNav);
+	requestAnimationFrame(syncCatalogNav);
+
 	const categoryContainers = document.querySelectorAll<HTMLElement>("[data-street-categories]");
 
 	categoryContainers.forEach((container) => {
