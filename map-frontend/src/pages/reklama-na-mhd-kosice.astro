@@ -113,15 +113,14 @@ const polepLine = `Polep: ${formatEuro(POLEP_PRICE)} bez DPH`;
 			</section>
 
 			<section id="verejne-osvetlenie" class="scroll-mt-44 pt-20">
-				<div class="grid grid-cols-1 gap-10 lg:grid-cols-[0.8fr_1.2fr] lg:items-start">
-					<div>
-						<p class="mb-2 text-xs font-extrabold uppercase tracking-[0.08em] text-brand">Reklama v uliciach</p>
-						<h2 class="text-[2rem] font-black text-bb-ink">Verejné osvetlenie</h2>
-						<p class="mt-3 leading-relaxed text-gray-600">Smerové tabule a vlajky dopĺňajú ponuku reklamných plôch v košických uliciach.</p>
-						<img src="/assets/mhd-kosice/public-lighting.webp" alt="Reklamné plochy na verejnom osvetlení v Košiciach" loading="lazy" decoding="async" class="mt-6 aspect-[16/10] w-full rounded-2xl bg-gray-100 object-cover" />
-					</div>
+				<div class="grid grid-cols-1 gap-8 lg:grid-cols-[minmax(0,1.65fr)_minmax(18rem,0.85fr)] lg:items-stretch">
+					<div class="flex min-w-0 flex-col gap-6">
+						<header class="rounded-2xl bg-gray-100 px-5 py-7 sm:px-7">
+							<p class="mb-2 text-xs font-extrabold uppercase tracking-[0.08em] text-brand">Reklama v uliciach</p>
+							<h2 class="text-[2rem] font-black text-bb-ink sm:text-[2.35rem]">Verejné osvetlenie</h2>
+							<p class="mt-3 max-w-2xl leading-relaxed text-gray-600">Smerové tabule a vlajky dopĺňajú ponuku reklamných plôch v košických uliciach.</p>
+						</header>
 
-					<div class="grid grid-cols-1 gap-6">
 						<article class="overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-sm">
 							<div class="bg-bb-ink px-5 py-4 text-white sm:px-6">
 								<h3 class="text-lg font-black">Smerové informačno-navádzacie tabule (SIT)</h3>
@@ -159,33 +158,49 @@ const polepLine = `Polep: ${formatEuro(POLEP_PRICE)} bez DPH`;
 							</div>
 							<p class="border-t border-gray-100 px-5 py-4 text-sm font-extrabold text-gray-700 sm:px-6">{polepLine}</p>
 						</article>
-					</div>
-				</div>
 
-				<div class="mt-8 rounded-2xl border border-gray-200 bg-white p-5 shadow-sm sm:p-7">
-					<div class="max-w-3xl">
-						<p class="mb-2 text-xs font-extrabold uppercase tracking-[0.08em] text-brand">Smerové tabule (SIT)</p>
-						<h3 class="text-2xl font-black text-bb-ink">Kategorizácia ulíc určených pre smerové tabule</h3>
-						<p class="mt-2 leading-relaxed text-gray-600">Rozbaľte kategóriu a pozrite si ulice, pre ktoré platí príslušný typ prenájmu VO.</p>
 					</div>
 
-					<div class="mt-6 grid grid-cols-1 gap-3 lg:grid-cols-3 lg:items-start">
-						{STREET_CATEGORIES.map((category, index) => (
-							<details name="street-category" class="group overflow-hidden rounded-xl border border-gray-200 bg-gray-50 open:border-brand/25 open:bg-white" open={index === 0}>
-								<summary class="flex cursor-pointer list-none items-center gap-3 px-4 py-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-brand [&::-webkit-details-marker]:hidden">
-									<span class="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-bb-ink text-sm font-black text-white">{category.code}</span>
-									<span class="min-w-0 flex-1">
-										<span class="block font-black text-bb-ink">Kategória {category.code}</span>
-										<span class="block text-xs font-semibold text-gray-500">{category.items.length} {category.code === "C" ? "skupiny" : "ulíc"}</span>
-									</span>
-									<Icon name="lucide:chevron-down" width="18" height="18" class="shrink-0 text-gray-500 transition-transform group-open:rotate-180" />
-								</summary>
-								<ul class="grid grid-cols-1 gap-2 border-t border-gray-100 px-4 py-4 sm:grid-cols-2 lg:grid-cols-1" aria-label={`Ulice kategórie ${category.code}`}>
-									{category.items.map((item) => <li class="rounded-lg bg-gray-100 px-3 py-2 text-sm font-semibold text-gray-700">{item}</li>)}
-								</ul>
-							</details>
-						))}
-					</div>
+					<aside data-street-categories class="flex min-h-[32rem] flex-col overflow-hidden rounded-2xl border border-gray-200 bg-gray-100 shadow-sm lg:h-full lg:max-h-[54rem]" aria-labelledby="street-category-title">
+						<div class="bg-bb-ink px-5 py-4 text-white">
+							<p class="text-xs font-bold uppercase tracking-[0.08em] text-white/60">Smerové tabule (SIT)</p>
+							<h3 id="street-category-title" class="mt-1 text-lg font-black">Kategória ulíc</h3>
+						</div>
+
+						<div class="flex gap-2 border-b border-gray-200 bg-white p-3" role="tablist" aria-label="Kategória ulíc">
+							{STREET_CATEGORIES.map((category, index) => (
+								<button
+									type="button"
+									class="street-category-tab rounded-xl px-3 py-3 text-left text-sm font-black focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2"
+									role="tab"
+									id={`street-tab-${category.code}`}
+									aria-controls={`street-panel-${category.code}`}
+									aria-selected={index === 0 ? "true" : "false"}
+									data-category-tab={category.code}
+								>
+									<span class="block text-lg">{category.code}</span>
+									<span class="category-tab-label mt-0.5 block whitespace-nowrap text-[0.68rem] font-bold opacity-70">{category.items.length} {category.code === "C" ? "skupiny" : "ulíc"}</span>
+								</button>
+							))}
+						</div>
+
+						<div class="min-h-0 flex-1 p-3 sm:p-4">
+							{STREET_CATEGORIES.map((category, index) => (
+								<div
+									class="h-full"
+									role="tabpanel"
+									id={`street-panel-${category.code}`}
+									aria-labelledby={`street-tab-${category.code}`}
+									data-category-panel={category.code}
+									hidden={index !== 0}
+								>
+									<ul class="street-category-list grid max-h-[30rem] grid-cols-1 gap-2 overflow-y-auto pr-1 sm:grid-cols-2 lg:h-full lg:max-h-none lg:grid-cols-1" aria-label={`Ulice kategórie ${category.code}`}>
+										{category.items.map((item) => <li class="rounded-lg border border-gray-200 bg-white px-3 py-2.5 text-sm font-semibold text-gray-700 shadow-xs">{item}</li>)}
+									</ul>
+								</div>
+							))}
+						</div>
+					</aside>
 				</div>
 			</section>
 		</div>
@@ -212,3 +227,73 @@ const polepLine = `Polep: ${formatEuro(POLEP_PRICE)} bez DPH`;
 		</section>
 	</div>
 </Layout>
+
+<style>
+	.street-category-tab {
+		min-width: 0;
+		flex: 1 1 0%;
+		background: #e5e7eb;
+		color: #374151;
+		transition: flex-grow 220ms ease, background-color 180ms ease, color 180ms ease, box-shadow 180ms ease;
+	}
+
+	.street-category-tab[aria-selected="true"] {
+		flex-grow: 2.5;
+		background: #e30613;
+		color: #fff;
+		box-shadow: 0 8px 22px rgb(227 6 19 / 18%);
+	}
+
+	.street-category-tab:not([aria-selected="true"]) .category-tab-label {
+		max-height: 0;
+		margin-top: 0;
+		opacity: 0;
+		overflow: hidden;
+	}
+
+	.street-category-list {
+		scrollbar-color: #c5c7cb transparent;
+		scrollbar-width: thin;
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		.street-category-tab {
+			transition: none;
+		}
+	}
+</style>
+
+<script>
+	const categoryContainers = document.querySelectorAll<HTMLElement>("[data-street-categories]");
+
+	categoryContainers.forEach((container) => {
+		const tabs = Array.from(container.querySelectorAll<HTMLButtonElement>("[data-category-tab]"));
+		const panels = Array.from(container.querySelectorAll<HTMLElement>("[data-category-panel]"));
+
+		const activateCategory = (code: string) => {
+			tabs.forEach((tab) => tab.setAttribute("aria-selected", String(tab.dataset.categoryTab === code)));
+			panels.forEach((panel) => {
+				const isActive = panel.dataset.categoryPanel === code;
+				panel.hidden = !isActive;
+				if (isActive) panel.querySelector<HTMLElement>(".street-category-list")?.scrollTo({ top: 0 });
+			});
+		};
+
+		tabs.forEach((tab, index) => {
+			tab.addEventListener("click", () => activateCategory(tab.dataset.categoryTab ?? "A"));
+			tab.addEventListener("keydown", (event) => {
+				let nextIndex = index;
+				if (event.key === "ArrowRight") nextIndex = (index + 1) % tabs.length;
+				else if (event.key === "ArrowLeft") nextIndex = (index - 1 + tabs.length) % tabs.length;
+				else if (event.key === "Home") nextIndex = 0;
+				else if (event.key === "End") nextIndex = tabs.length - 1;
+				else return;
+
+				event.preventDefault();
+				const nextTab = tabs[nextIndex];
+				nextTab?.focus();
+				activateCategory(nextTab?.dataset.categoryTab ?? "A");
+			});
+		});
+	});
+</script>
