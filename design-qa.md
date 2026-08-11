@@ -1,43 +1,53 @@
-# Design QA — Verejné osvetlenie
+# Design QA — MHD overview
 
 ## Evidence
 
-- Source visual truth: `docs/design-qa/mhd-street-tabs/aligned-layout-reference.png` (`843 × 734 px`) and `docs/design-qa/mhd-street-tabs/pale-red-reference.png` (`88 × 210 px`).
-- Rendered implementation: `docs/design-qa/mhd-street-tabs/implementation.png` (`1278 × 889 px`).
-- Combined comparison: `docs/design-qa/mhd-street-tabs/comparison.png` (`1472 × 780 px`).
-- Browser viewport: `1444 × 1013 CSS px`; implementation crop: `1150 × 800 CSS px` at approximately `1.111×` capture density.
-- State: desktop route `/reklama-na-mhd-kosice/`, street category `A` selected.
+- Source visual truth:
+  - `docs/design-qa/mhd-overview/type-overview-reference.png` (`1225 × 462 px`).
+  - `docs/design-qa/mhd-overview/menu-cards-reference.png` (`781 × 409 px`).
+  - `docs/design-qa/mhd-overview/technical-cta-reference.png` (`374 × 616 px`).
+- Browser-rendered implementation:
+  - `docs/design-qa/mhd-overview/implementation-overview.png` (`1586 × 1126 px`).
+  - `docs/design-qa/mhd-overview/implementation-menu.png` (`1586 × 1126 px`).
+- Combined full-view and focused-region evidence: `docs/design-qa/mhd-overview/comparison.png` (`1800 × 1120 px`).
+- Browser viewport: `1444 × 1013 CSS px`, device pixel ratio `0.9`; the saved browser captures include the in-app browser's mirrored canvas, while the comparison uses matching central content crops.
+- State: desktop route `/reklama-na-mhd-kosice/`; overview, section-link cards, CTA, and sticky navigation visible.
 
 ## Findings
 
 No actionable P0, P1, or P2 differences remain.
 
-- Fonts and typography: existing Plus Jakarta Sans family, weights, hierarchy, and table copy are preserved. The pale headers retain the original readable heading size and weight.
-- Spacing and layout rhythm: the section title remains separate above the two-column content. Browser measurement confirms `0 px` difference between the top and bottom edges of the pricing column and the category card.
-- Colors and visual tokens: all three card headers use the requested `brand/10` pale red with brand-red text. The active category tab is white with a neutral border; the red selected-state fill and red shadow are absent.
-- Section navigation: the sticky `Autobusy / Električky / Verejné osvetlenie` control now uses the existing `bb-control` graphite token, white translucent chips, and a neutral shadow so it remains distinct without adding more saturated red.
-- Image quality and asset fidelity: this focused region contains no raster content beyond the supplied references; the existing library icon remains sharp and correctly aligned.
-- Copy and content: Slovak headings, prices, category counts, and street names are unchanged.
-- Interaction: category `B` was activated and category `A` restored successfully. The list remains scrollable, keyboard behavior remains implemented, and the browser console reported no errors.
-
-Focused-region comparison was required because the requested changes concern header tint, selected-tab treatment, and exact column height. The combined comparison shows those details at readable scale.
+- Fonts and typography: the MHD overview reuses the exact Plus Jakarta Sans hierarchy, optical weights, uppercase labels, paragraph sizing, and card typography from `/typ/[slug]` pages. The longer MHD title wraps to two lines, which is an expected content-driven difference.
+- Spacing and layout rhythm: the `2 / 3 + 1 / 3` desktop grid, 40 px section rhythm, benefit-card spacing, compact parameter rows, radii, borders, and shadows match the type-page pattern.
+- Colors and visual tokens: the overview uses the existing `brand`, `brand/10`, `bb-control`, gray surface, and white card tokens. The red technical header and CTA match the selected references; the sticky catalog navigation remains graphite to avoid excess red.
+- Image quality and asset fidelity: the new overview introduces no new raster imagery. Existing hero and vehicle assets remain unchanged, and all new UI icons use the installed icon library.
+- Copy and content: all visible product copy is Slovak. The MHD-specific description, benefits, technical parameters, section labels, and CTA describe the existing offer without adding unsupported audience or performance figures.
+- Affordances and interaction states: the three numbered cards link to `#autobusy`, `#elektricky`, and `#verejne-osvetlenie`; the tested Autobusy link updated the hash and placed the sticky navigation at `120 px`. Hover, focus, and CTA states use the established type-page treatments.
+- Responsive structure: the grid collapses to one column, the right rail loses sticky positioning, badges hide on narrow screens, and the catalog navigation remains horizontally scrollable.
 
 ## Comparison history
 
-1. P2 — the category card visually continued below the two pricing cards because the grid row was sized by the longer street list. Fixed by measuring the natural pricing-column height at desktop widths and synchronizing the category card through `ResizeObserver`. Post-fix browser evidence: top delta `0 px`, bottom delta `0 px`.
-2. P2 — saturated red headers and the red selected tab created excessive visual emphasis. Fixed by applying the existing `brand/10` tint to all headers and using a white active tab with a neutral border. Post-fix computed styles confirm pale red headers and a white active tab.
+First comparison pass: no actionable P0, P1, or P2 mismatch was found. The implementation intentionally substitutes MHD-specific copy and three section links for the reference page's billboard formats while preserving its hierarchy and component geometry.
+
+## Browser verification
+
+- Primary interaction tested: section-link card `Autobusy` → `#autobusy`.
+- Sticky menu verified at `top: 120px` after the overview.
+- CTA destinations verified: `tel:+421917930494` and `/kontakt/`.
+- Browser console errors: none.
+- Build, Node tests, and Astro diagnostics: passed.
 
 ## Implementation checklist
 
-- [x] Preserve separate section heading.
-- [x] Align the category card with both pricing cards.
-- [x] Use the supplied pale red treatment.
-- [x] Keep active-tab expansion without a saturated fill.
-- [x] Preserve tab switching, scrolling, focus behavior, and mobile stacking.
-- [x] Verify console, build, tests, and Astro diagnostics.
+- [x] Add general MHD type description.
+- [x] Add `Kľúčové výhody` using the shared type-page card pattern.
+- [x] Replace `Formáty` with three functional section-link cards.
+- [x] Add MHD technical parameters and CTA in the right rail.
+- [x] Place the sticky section navigation after the overview.
+- [x] Preserve all detailed offer sections and their interactions.
 
 ## Follow-up polish
 
-No P3 follow-up is required for the requested region.
+No P3 follow-up is required for the requested desktop composition.
 
 final result: passed

@@ -11,6 +11,11 @@ test("built MHD page exposes the full offer and SEO contract", async () => {
   const sitemap = await readFile(path.join(frontendRoot, "dist/sitemap.xml"), "utf8");
   const requiredCopy = [
     "Reklama na autobusoch a električkách v Košiciach",
+    "Reklama v košickej MHD — prenájom plôch na vozidlách a v uliciach",
+    "Kľúčové výhody",
+    "Ponuka MHD reklamy",
+    "Technické parametre",
+    "Záujem o reklamu v MHD?",
     "Celoplošný polep — krátky autobus",
     "Busboard XXL",
     "Zadná plocha — celá",
@@ -26,6 +31,11 @@ test("built MHD page exposes the full offer and SEO contract", async () => {
   for (const copy of requiredCopy) assert.ok(html.includes(copy), `Missing built copy: ${copy}`);
   assert.equal((html.match(/Polep: 100,00 € bez DPH/g) ?? []).length, 13);
   assert.equal((html.match(/data-category-tab=/g) ?? []).length, 3);
+  assert.match(html, /id="ponuka-mhd"/);
+  assert.match(html, /href="#autobusy"/);
+  assert.match(html, /href="#elektricky"/);
+  assert.match(html, /href="#verejne-osvetlenie"/);
+  assert.match(html, /aria-label="Kategórie reklamy v MHD"[^>]*sticky/);
   assert.match(html, /data-category-tab="A"[^>]*aria-selected="true"|aria-selected="true"[^>]*data-category-tab="A"/);
   assert.match(html, /street-category-list[^"\n]*auto-rows-max[^"\n]*content-start/);
   assert.doesNotMatch(html, /Informácie k cenám/);
