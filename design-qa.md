@@ -1,51 +1,43 @@
-# Design QA — Verejné osvetlenie street tabs
+# Design QA — Verejné osvetlenie
 
-- Source visual truth: `docs/design-qa/mhd-street-tabs/reference.png`
-- Implementation screenshot: `docs/design-qa/mhd-street-tabs/implementation.png`
-- Side-by-side comparison: `docs/design-qa/mhd-street-tabs/comparison.png`
-- Route: `http://localhost:4321/reklama-na-mhd-kosice/`
-- State: desktop, category A selected; responsive and B/C interaction states checked separately.
-- Requested browser viewport: 1444 × 1013. The in-app browser rendered a 1604 × 1125 CSS viewport; the focused implementation crop is 1216 × 650 px.
-- Source image: 907 × 864 px. The comparison canvas is 1680 × 840 px; both sources were proportionally fitted into equal 820 × 780 regions without stretching.
+## Evidence
 
-## Full-view comparison evidence
-
-The comparison confirms the requested composition: title and both price tables form the wide left column, while the street category selector occupies the tall right column. The active A tab is wider than B and C, and the street list scrolls inside the panel.
-
-## Focused region comparison evidence
-
-The full comparison already uses a focused crop of the complete `Verejné osvetlenie` component. Text, table headers, tab states and representative street rows are readable at this scale, so an additional detail crop was not required.
-
-## Required fidelity surfaces
-
-- Fonts and typography: existing Billboardy.sk typography and weights are preserved; hierarchy follows the reference with a prominent section title, compact panel title and dense table copy.
-- Spacing and layout rhythm: two-column desktop layout, stacked tables and right-side panel match the reference structure. On mobile the panel stacks below the tables with no horizontal overflow.
-- Colors and visual tokens: the mockup's neutral structure is retained while the implementation uses the site's established black, gray and red brand tokens. The active tab uses brand red as the selected state.
-- Image quality and asset fidelity: the reference contains no required photographic or illustrative asset in this component. No placeholder or recreated image was introduced.
-- Copy and content: existing Slovak table copy and prices are unchanged. Categories A, B and C expose the official DPMK street lists.
-
-## Interaction and browser checks
-
-- Initial state: A selected; measured tab widths 184 / 88 / 88 px.
-- Click state: B selected; measured tab widths 88 / 184 / 88 px; 38 rows visible in the active panel.
-- Keyboard state: Arrow Right from B selects C; measured widths 88 / 88 / 184 px.
-- Mobile: panel stacks below the tables; page client width equals scroll width.
-- Category C row-height regression check: all three visible rows measure 42 px, matching a visible category B row at 42 px.
-- Browser console: 0 errors.
+- Source visual truth: `docs/design-qa/mhd-street-tabs/aligned-layout-reference.png` (`843 × 734 px`) and `docs/design-qa/mhd-street-tabs/pale-red-reference.png` (`88 × 210 px`).
+- Rendered implementation: `docs/design-qa/mhd-street-tabs/implementation.png` (`1278 × 889 px`).
+- Combined comparison: `docs/design-qa/mhd-street-tabs/comparison.png` (`1472 × 780 px`).
+- Browser viewport: `1444 × 1013 CSS px`; implementation crop: `1150 × 800 CSS px` at approximately `1.111×` capture density.
+- State: desktop route `/reklama-na-mhd-kosice/`, street category `A` selected.
 
 ## Findings
 
-- P0: none.
-- P1: none.
-- P2: none.
-- P3: the implementation intentionally applies Billboardy.sk brand styling rather than the grayscale presentation of the wireframe.
+No actionable P0, P1, or P2 differences remain.
+
+- Fonts and typography: existing Plus Jakarta Sans family, weights, hierarchy, and table copy are preserved. The pale headers retain the original readable heading size and weight.
+- Spacing and layout rhythm: the section title remains separate above the two-column content. Browser measurement confirms `0 px` difference between the top and bottom edges of the pricing column and the category card.
+- Colors and visual tokens: all three card headers use the requested `brand/10` pale red with brand-red text. The active category tab is white with a neutral border; the red selected-state fill and red shadow are absent.
+- Section navigation: the sticky `Autobusy / Električky / Verejné osvetlenie` control now uses the existing `bb-control` graphite token, white translucent chips, and a neutral shadow so it remains distinct without adding more saturated red.
+- Image quality and asset fidelity: this focused region contains no raster content beyond the supplied references; the existing library icon remains sharp and correctly aligned.
+- Copy and content: Slovak headings, prices, category counts, and street names are unchanged.
+- Interaction: category `B` was activated and category `A` restored successfully. The list remains scrollable, keyboard behavior remains implemented, and the browser console reported no errors.
+
+Focused-region comparison was required because the requested changes concern header tint, selected-tab treatment, and exact column height. The combined comparison shows those details at readable scale.
 
 ## Comparison history
 
-- Initial coded comparison: no actionable P0/P1/P2 differences. No visual fix iteration was required after the side-by-side review.
-- Browser annotation follow-up: category C's three grid rows stretched to fill the panel height. Added max-content grid rows with start alignment; post-fix browser measurements are 42 / 42 / 42 px in C and 42 px in B.
-- Browser annotation follow-up: removed the `Polep: 100,00 € bez DPH` footer rows from the SIT and VLAJKA tables only; the 13 vehicle-format cards retain the polep price.
+1. P2 — the category card visually continued below the two pricing cards because the grid row was sized by the longer street list. Fixed by measuring the natural pricing-column height at desktop widths and synchronizing the category card through `ResizeObserver`. Post-fix browser evidence: top delta `0 px`, bottom delta `0 px`.
+2. P2 — saturated red headers and the red selected tab created excessive visual emphasis. Fixed by applying the existing `brand/10` tint to all headers and using a white active tab with a neutral border. Post-fix computed styles confirm pale red headers and a white active tab.
 
-## Final result
+## Implementation checklist
+
+- [x] Preserve separate section heading.
+- [x] Align the category card with both pricing cards.
+- [x] Use the supplied pale red treatment.
+- [x] Keep active-tab expansion without a saturated fill.
+- [x] Preserve tab switching, scrolling, focus behavior, and mobile stacking.
+- [x] Verify console, build, tests, and Astro diagnostics.
+
+## Follow-up polish
+
+No P3 follow-up is required for the requested region.
 
 final result: passed
