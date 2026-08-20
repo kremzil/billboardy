@@ -10,7 +10,7 @@
     "build": "astro build",
     "preview": "astro preview",
     "check": "astro check",
-    "test": "node --test --experimental-strip-types src/data/mhdAdvertising.test.ts src/data/mhdAdvertisingPage.test.ts",
+    "test": "node --test --experimental-strip-types src/data/mhdAdvertising.test.ts src/data/mhdAdvertisingPage.test.ts src/scripts/inquiryItem.test.ts",
     "astro": "astro"
   },
   "dependencies": {

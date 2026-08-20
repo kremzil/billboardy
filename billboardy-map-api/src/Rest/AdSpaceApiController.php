@@ -7,6 +7,7 @@ namespace Billboardy\MapApi\Rest;
 use Billboardy\MapApi\Admin\SettingsPage;
 use Billboardy\MapApi\Repository\InquiryLogRepository;
 use Billboardy\MapApi\Service\AdSpaceService;
+use Billboardy\MapApi\Service\InquiryItemSanitizer;
 use Billboardy\MapApi\Service\TurnstileVerifier;
 
 final class AdSpaceApiController
@@ -290,35 +291,7 @@ final class AdSpaceApiController
      */
     private function sanitizeInquiryItems($items): array
     {
-        if (!is_array($items)) {
-            return [];
-        }
-
-        $sanitized = [];
-
-        foreach (array_slice($items, 0, 20) as $item) {
-            if (!is_array($item)) {
-                continue;
-            }
-
-            $id = sanitize_text_field((string) ($item['id'] ?? ''));
-            $title = sanitize_text_field((string) ($item['title'] ?? ''));
-
-            if ($id === '' || $title === '') {
-                continue;
-            }
-
-            $sanitized[] = [
-                'id' => $id,
-                'code' => sanitize_text_field((string) ($item['code'] ?? '')),
-                'title' => $title,
-                'mediaTypeLabel' => sanitize_text_field((string) ($item['mediaTypeLabel'] ?? '')),
-                'locationLabel' => sanitize_text_field((string) ($item['locationLabel'] ?? '')),
-                'sizeLabel' => sanitize_text_field((string) ($item['sizeLabel'] ?? '')),
-            ];
-        }
-
-        return $sanitized;
+        return (new InquiryItemSanitizer())->sanitize($items);
     }
 
     /**

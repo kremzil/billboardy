@@ -1,14 +1,5 @@
 import { requestTurnstileToken } from './turnstile';
-
-type InquiryItem = {
-  id: string;
-  code: string;
-  title: string;
-  mediaTypeLabel: string;
-  locationLabel: string;
-  sizeLabel: string;
-  imageUrl: string;
-};
+import { normalizeInquiryItem, type InquiryItem } from './inquiryItem';
 
 type InquiryAddEvent = CustomEvent<InquiryItem>;
 
@@ -109,7 +100,10 @@ function readItems(): InquiryItem[] {
       return [];
     }
 
-    return parsed.filter(isInquiryItem).slice(0, 20);
+    return parsed
+      .map(normalizeInquiryItem)
+      .filter((item): item is InquiryItem => item !== null)
+      .slice(0, 20);
   } catch {
     return [];
   }
@@ -120,12 +114,14 @@ function writeItems(items: InquiryItem[]): void {
 }
 
 function addItem(item: InquiryItem): void {
-  if (!isInquiryItem(item)) {
+  const normalizedItem = normalizeInquiryItem(item);
+
+  if (!normalizedItem) {
     return;
   }
 
   const items = readItems();
-  const next = [item, ...items.filter((current) => current.id !== item.id)];
+  const next = [normalizedItem, ...items.filter((current) => current.id !== normalizedItem.id)];
   writeItems(next);
 }
 
@@ -253,15 +249,6 @@ function getFocusableElements(scope: HTMLElement): HTMLElement[] {
 function showMessage(node: HTMLElement, text: string, state: 'muted' | 'success' | 'error'): void {
   node.textContent = text;
   node.dataset.state = state;
-}
-
-function isInquiryItem(value: unknown): value is InquiryItem {
-  if (!value || typeof value !== 'object') {
-    return false;
-  }
-
-  const item = value as Record<string, unknown>;
-  return typeof item.id === 'string' && typeof item.title === 'string';
 }
 
 function mustGet<T extends Element>(selector: string, scope: ParentNode): T {
