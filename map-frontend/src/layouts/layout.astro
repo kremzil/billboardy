@@ -11,6 +11,7 @@ import {
 	DEFAULT_DESCRIPTION,
 	DEFAULT_OG_IMAGE,
 	DEFAULT_TITLE,
+	GOOGLE_TAG_ID,
 	GTM_ID,
 	SITE_NAME,
 	withBasePath,
@@ -47,6 +48,11 @@ const websiteId = absoluteUrl("/#website");
 const serviceId = absoluteUrl("/#outdoor-advertising-service");
 const offerCatalogId = absoluteUrl("/#advertising-format-catalog");
 const llmsTxtUrl = absoluteUrl("llms.txt");
+const googleTagUrl = `https://www.googletagmanager.com/gtag/js?id=${encodeURIComponent(GOOGLE_TAG_ID)}`;
+const googleTagScript = GOOGLE_TAG_ID ? `window.dataLayer = window.dataLayer || [];
+function gtag(){dataLayer.push(arguments);}
+gtag('js', new Date());
+gtag('config', ${JSON.stringify(GOOGLE_TAG_ID)});` : "";
 const gtmScript = GTM_ID ? `(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
 new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
 j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
@@ -118,6 +124,13 @@ const structuredData = {
 <html lang="sk">
 	<head>
 		<meta charset="utf-8" />
+		{GOOGLE_TAG_ID && (
+			<>
+				<!-- Google tag (gtag.js) -->
+				<script is:inline async src={googleTagUrl}></script>
+				<script is:inline set:html={googleTagScript} />
+			</>
+		)}
 		{GTM_ID && (
 			<>
 				<!-- Google Tag Manager -->

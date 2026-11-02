@@ -8,6 +8,7 @@ export const CONTACT_PHONE_DISPLAY = "+421 917 930 494";
 export const CONTACT_PHONE_TEL = "+421917930494";
 export const CONTACT_EMAIL = "obchod@kpkreklama.sk";
 export const GTM_ID = import.meta.env.PUBLIC_GTM_ID?.trim() ?? "";
+export const GOOGLE_TAG_ID = import.meta.env.PUBLIC_GOOGLE_TAG_ID?.trim() ?? "";
 
 export function withBasePath(path = "") {
 	const basePath = import.meta.env.BASE_URL || "/";

@@ -108,6 +108,8 @@ MHD-страница имеет собственные сущности `Service
 
 Тут определяются runtime/build настройки, которые не стоит зашивать в код. `PUBLIC_GTM_ID` задаёт Google Tag Manager container для конкретного окружения; если переменная пустая, GTM не рендерится.
 
+`PUBLIC_GOOGLE_TAG_ID` задаёт отдельный Google tag (GA4); для Billboardy.sk используется `G-4JG58VCGS0`. Общий layout добавляет в `<head>` асинхронный `gtag.js`, инициализацию `dataLayer` и `gtag('config', ...)` один раз на страницу. Если переменная пустая, этот тег не рендерится. ID задаётся при сборке; после изменения нужна новая сборка frontend. На 2026-11-02 этот ID отсутствовал в опубликованном `GTM-KSF7T7H`; при переносе GA4 в GTM отдельную настройку следует очистить, чтобы не дублировать сбор событий.
+
 ### SEO
 
 - `src/layouts/layout.astro` формирует базовые meta tags: `title`, `description`, `robots`, canonical URL, Open Graph, Twitter Card и JSON-LD `WebSite`.

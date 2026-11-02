@@ -32,14 +32,76 @@ final class InquiryLogRepository
                 'recipient_email' => $record['recipient_email'] ?? '',
                 'subject' => $record['subject'] ?? '',
                 'error_message' => '',
+                'request_hash' => $record['request_hash'] ?? '',
+                'ip_hash' => $record['ip_hash'] ?? '',
                 'created_at' => $now,
                 'updated_at' => $now,
                 'sent_at' => null,
             ],
-            ['%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s']
+            array_fill(0, 18, '%s')
         );
 
         return $inserted === false ? 0 : (int) $wpdb->insert_id;
+    }
+
+    // Serialize only the short check-and-insert section, never CAPTCHA or SMTP.
+    public function acquireSubmissionLock(): bool
+    {
+        global $wpdb;
+
+        return (string) $wpdb->get_var($wpdb->prepare('SELECT GET_LOCK(%s, 2)', $this->submissionLockName())) === '1';
+    }
+
+    public function releaseSubmissionLock(): void
+    {
+        global $wpdb;
+        $wpdb->get_var($wpdb->prepare('SELECT RELEASE_LOCK(%s)', $this->submissionLockName()));
+    }
+
+    public function recentDuplicateStatus(string $hash, string $cutoff): string
+    {
+        global $wpdb;
+        $status = $wpdb->get_var($wpdb->prepare(
+            'SELECT status FROM ' . Schema::inquiryLogTableName()
+            . " WHERE request_hash = %s AND created_at >= %s AND status IN ('pending', 'sent') ORDER BY id DESC LIMIT 1",
+            $hash,
+            $cutoff
+        ));
+        $this->assertQuerySucceeded();
+
+        return (string) $status;
+    }
+
+    public function recentCount(string $field, string $value, string $cutoff, bool $excludeFailed = false): int
+    {
+        if (!in_array($field, ['email', 'ip_hash'], true)) {
+            throw new \InvalidArgumentException('Unsupported inquiry limit field.');
+        }
+
+        global $wpdb;
+        $statusClause = $excludeFailed ? " AND status IN ('pending', 'sent')" : '';
+        $count = $wpdb->get_var($wpdb->prepare(
+            'SELECT COUNT(*) FROM ' . Schema::inquiryLogTableName()
+            . " WHERE {$field} = %s AND created_at >= %s{$statusClause}",
+            $value,
+            $cutoff
+        ));
+        $this->assertQuerySucceeded();
+
+        return (int) $count;
+    }
+
+    private function submissionLockName(): string
+    {
+        return 'bb_inquiry_' . substr(hash('sha256', DB_NAME . ':' . Schema::inquiryLogTableName()), 0, 48);
+    }
+
+    private function assertQuerySucceeded(): void
+    {
+        global $wpdb;
+        if ($wpdb->last_error !== '') {
+            throw new \RuntimeException('Inquiry protection storage is unavailable.');
+        }
     }
 
     public function markSent(int $id): void

@@ -10,6 +10,7 @@ export interface VehicleOffer {
   imageAlt: string;
   note?: string;
   prices: { period: string; sourcePrice: number }[];
+  polep: { quantity ?: string | undefined ; polepPrice: number }[];
 }
 
 export interface RentalOffer {
@@ -45,6 +46,7 @@ export const BUS_OFFERS: VehicleOffer[] = [
       { period: "6 mesiacov", sourcePrice: 576 },
       { period: "12 mesiacov", sourcePrice: 540 },
     ],
+    polep: [ { polepPrice: 2800 } ],
   },
   {
     slug: "celoplosny-polep-dlhy-autobus",
@@ -57,6 +59,7 @@ export const BUS_OFFERS: VehicleOffer[] = [
       { period: "6 mesiacov", sourcePrice: 656 },
       { period: "12 mesiacov", sourcePrice: 615 },
     ],
+    polep: [ { polepPrice: 3000 } ],
   },
   {
     slug: "busboard-xxl",
@@ -70,6 +73,7 @@ export const BUS_OFFERS: VehicleOffer[] = [
       { period: "6 mesiacov", sourcePrice: 360 },
       { period: "12 mesiacov", sourcePrice: 337.5 },
     ],
+    polep: [ { polepPrice: 350 } ],
   },
   {
     slug: "busboard-xl",
@@ -83,6 +87,7 @@ export const BUS_OFFERS: VehicleOffer[] = [
       { period: "6 mesiacov", sourcePrice: 296 },
       { period: "12 mesiacov", sourcePrice: 277.5 },
     ],
+    polep: [ { polepPrice: 240 } ],
   },
   {
     slug: "busboard-l",
@@ -96,6 +101,7 @@ export const BUS_OFFERS: VehicleOffer[] = [
       { period: "6 mesiacov", sourcePrice: 144 },
       { period: "12 mesiacov", sourcePrice: 135 },
     ],
+    polep: [ { polepPrice: 143 } ],
   },
   {
     slug: "doorboard",
@@ -109,6 +115,7 @@ export const BUS_OFFERS: VehicleOffer[] = [
       { period: "6 mesiacov", sourcePrice: 144 },
       { period: "12 mesiacov", sourcePrice: 135 },
     ],
+    polep: [ { polepPrice: 277 } ],
   },
   {
     slug: "bocna-samolepka-220x60",
@@ -123,6 +130,11 @@ export const BUS_OFFERS: VehicleOffer[] = [
       { period: "3 mesiace", sourcePrice: 90 },
       { period: "6 mesiacov", sourcePrice: 85 },
       { period: "12 mesiacov", sourcePrice: 80 },
+    ],
+    polep: [
+      { quantity: "1-10", polepPrice: 60 },
+      { quantity: "11-20", polepPrice: 55 },
+      { quantity: "21-50", polepPrice: 48 },
     ],
   },
   {
@@ -139,6 +151,10 @@ export const BUS_OFFERS: VehicleOffer[] = [
       { period: "6 mesiacov", sourcePrice: 51 },
       { period: "12 mesiacov", sourcePrice: 48 },
     ],
+    polep: [
+      { quantity: "1-20", polepPrice: 30 },
+      { quantity: "21-50", polepPrice: 29 },
+    ],
   },
   {
     slug: "bocna-samolepka-130x30",
@@ -148,6 +164,7 @@ export const BUS_OFFERS: VehicleOffer[] = [
     imageAlt: "Bočná reklamná samolepka na autobuse",
     note: oneVisionNote,
     prices: [{ period: "1 mesiac", sourcePrice: 30 }],
+    polep: [ { polepPrice: 29 } ],
   },
   {
     slug: "zadna-plocha-okno",
@@ -160,6 +177,7 @@ export const BUS_OFFERS: VehicleOffer[] = [
       { period: "6 mesiacov", sourcePrice: 85 },
       { period: "12 mesiacov", sourcePrice: 80 },
     ],
+    polep: [ { polepPrice: 98 } ],
   },
   {
     slug: "zadna-plocha-cela",
@@ -172,6 +190,7 @@ export const BUS_OFFERS: VehicleOffer[] = [
       { period: "6 mesiacov", sourcePrice: 170 },
       { period: "12 mesiacov", sourcePrice: 160 },
     ],
+    polep: [ { polepPrice: 249 } ],
   },
 ];
 
@@ -188,6 +207,7 @@ export const TRAM_OFFERS: VehicleOffer[] = [
       { period: "6 mesiacov", sourcePrice: 736 },
       { period: "12 mesiacov", sourcePrice: 690 },
     ],
+    polep: [ { polepPrice: 3500 } ],
   },
   {
     slug: "e-board-xxl",
@@ -201,6 +221,7 @@ export const TRAM_OFFERS: VehicleOffer[] = [
       { period: "6 mesiacov", sourcePrice: 440 },
       { period: "12 mesiacov", sourcePrice: 412.5 },
     ],
+    polep: [ { polepPrice: 293 } ],
   },
 ];
 

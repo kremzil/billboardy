@@ -31,7 +31,7 @@ const contactHref = `${basePath}kontakt/?typ=${encodeURIComponent(offer.title)}`
 				<thead class="bg-gray-50 text-xs uppercase tracking-wide text-gray-500">
 					<tr>
 						<th scope="col" class="px-4 py-3 font-extrabold">Dĺžka kampane</th>
-						<th scope="col" class="px-4 py-3 text-right font-extrabold">Cena prenájmu / mesiac</th>
+						<th scope="col" class="px-4 py-3 text-right font-extrabold">Cena prenájmu (bez DPH) / mesiac</th>
 					</tr>
 				</thead>
 				<tbody class="divide-y divide-gray-100">
@@ -46,9 +46,28 @@ const contactHref = `${basePath}kontakt/?typ=${encodeURIComponent(offer.title)}`
 				</tbody>
 			</table>
 		</div>
-
 		<div class="mt-auto pt-4">
-			<p class="text-sm font-extrabold text-gray-700">Polep: {formatEuro(POLEP_PRICE)} bez DPH</p>
+			<table class="text-left text-sm">
+				<tbody>
+				<tr>
+					<th scope="row" class="align-top px-4 py-3 font-extrabold text-gray-700">
+						Polep:
+					</th>
+
+					<td class="px-4 py-3  text-gray-700">
+						{offer.polep.map(({ quantity, polepPrice }) => (
+							<p>
+								{quantity && `${quantity} - `}
+								{formatEuro(polepPrice)}{quantity ? "/ks" : ""} bez DPH
+							</p>
+						))}
+					</td>
+				</tr>
+				</tbody>
+			</table>
+		</div>
+		<div class="mt-auto pt-4">
+
 			<a
 				href={contactHref}
 				class="mt-5 inline-flex w-full items-center justify-center rounded-xl bg-brand px-5 py-3 text-sm font-extrabold text-white transition-opacity hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2"

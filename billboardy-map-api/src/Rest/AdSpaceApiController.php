@@ -8,6 +8,7 @@ use Billboardy\MapApi\Admin\SettingsPage;
 use Billboardy\MapApi\Repository\InquiryLogRepository;
 use Billboardy\MapApi\Service\AdSpaceService;
 use Billboardy\MapApi\Service\InquiryItemSanitizer;
+use Billboardy\MapApi\Service\InquirySubmissionGuard;
 use Billboardy\MapApi\Service\TurnstileVerifier;
 
 final class AdSpaceApiController
@@ -187,7 +188,7 @@ final class AdSpaceApiController
             'Reply-To: ' . $replyName . ' <' . $email . '>',
         ];
 
-        $logId = $this->inquiryLogs->create([
+        $reservation = (new InquirySubmissionGuard($this->inquiryLogs))->reserve([
             'source' => $source,
             'name' => $name,
             'email' => $email,
@@ -205,7 +206,15 @@ final class AdSpaceApiController
             'items_json' => (string) wp_json_encode($items),
             'recipient_email' => $recipient,
             'subject' => $subject,
-        ]);
+        ], $remoteIp);
+
+        if (is_wp_error($reservation)) {
+            return $reservation;
+        }
+        if ($reservation['duplicate']) {
+            return $this->response(['data' => ['sent' => true, 'duplicate' => true, 'count' => count($items)]]);
+        }
+        $logId = $reservation['id'];
 
         if (!wp_mail($recipient, $subject, $body, $headers)) {
             $this->inquiryLogs->markFailed($logId, 'wp_mail returned false');

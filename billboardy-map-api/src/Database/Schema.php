@@ -7,7 +7,7 @@ namespace Billboardy\MapApi\Database;
 final class Schema
 {
     public const VERSION_OPTION = 'billboardy_map_api_schema_version';
-    public const VERSION = '1.1.0';
+    public const VERSION = '1.2.0';
 
     public static function tableName(): string
     {
@@ -89,6 +89,8 @@ final class Schema
             recipient_email VARCHAR(255) NOT NULL DEFAULT '',
             subject VARCHAR(255) NOT NULL DEFAULT '',
             error_message TEXT NULL,
+            request_hash VARCHAR(64) NOT NULL DEFAULT '',
+            ip_hash VARCHAR(64) NOT NULL DEFAULT '',
             created_at DATETIME NOT NULL,
             updated_at DATETIME NOT NULL,
             sent_at DATETIME NULL,
@@ -96,6 +98,9 @@ final class Schema
             KEY status (status),
             KEY source (source),
             KEY email (email),
+            KEY request_created (request_hash, created_at),
+            KEY ip_created (ip_hash, created_at),
+            KEY email_created (email, created_at),
             KEY created_at (created_at)
         ) {$charset};";
 
